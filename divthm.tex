@@ -1,0 +1,979 @@
+\documentclass[a4paper,UKenglish,cleveref, autoref, thm-restate]{lipics-v2021}
+
+\bibliographystyle{plainurl}% the mandatory bibstyle
+
+\author{Yury Kudryashov}{University of Toronto at Mississauga, Canada}{yury.kudriashov@utoronto.ca}{https://orcid.org/0000-0003-4286-9276}{}
+% TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
+
+\authorrunning{Yu. Kudryashov} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
+
+\Copyright{Yury Kudryashov} %TODO mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+
+\ccsdesc[500]{Mathematics of computing~Integral calculus}
+\ccsdesc[500]{Security and privacy~Logic and verification}
+
+\keywords{divergence theorem, Green's theorem, Gauge integral, Cauchy integral formula, Cauchy-Goursat theorem, complex analysis} %TODO mandatory; please add comma-separated list of keywords
+
+\category{} %optional, e.g. invited paper
+
+\relatedversion{} %optional, e.g. full version hosted on arXiv, HAL, or other respository/website
+%\relatedversiondetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93]{Classification (e.g. Full Version, Extended Version, Previous Version}{URL to related version} %linktext and cite are optional
+
+%\supplement{}%optional, e.g. related research data, source code, ... hosted on a repository like zenodo, figshare, GitHub, ...
+%\supplementdetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93, subcategory={Description, Subcategory}, swhid={Software Heritage Identifier}]{General Classification (e.g. Software, Dataset, Model, ...)}{URL to related version} %linktext, cite, and subcategory are optional
+
+%\funding{(Optional) general funding statement \dots}%optional, to capture a funding statement, which applies to all authors. Please enter author specific funding statements as fifth argument of the \author macro.
+
+% \acknowledgements{I want to thank TODO REFORMULATE Patrick (idea), Sébastien (review, discussions), wife Nataliya Goncharuk (constant support, proofreading), the rest of the \texttt{mathlib} community (fruitful discussions, comments on the early versions of this paper)}%optional
+
+% \nolinenumbers %uncomment to disable line numbering
+
+\usepackage{csquotes,braket,upgreek,MnSymbol}
+
+\definecolor{keywordcolor}{rgb}{0.7, 0.1, 0.1}   % red
+\definecolor{commentcolor}{rgb}{0.4, 0.4, 0.4}   % grey
+\definecolor{symbolcolor}{rgb}{0.0, 0.1, 0.6}    % blue
+\definecolor{sortcolor}{rgb}{0.1, 0.5, 0.1}      % green
+\definecolor{errorcolor}{rgb}{1, 0, 0}           % bright red
+\definecolor{stringcolor}{rgb}{0.5, 0.3, 0.2}    % brown
+\usepackage{listings}
+\def\lstlanguagefiles{lstlean.tex}
+\lstset{language=lean}
+
+\newcommand{\bbR}{\mathbb{R}}
+\newcommand{\bbC}{\mathbb{C}}
+\newcommand{\bbN}{\mathbb{N}}
+\newcommand{\eps}{\varepsilon}
+\DeclareMathOperator{\divg}{div}
+\undef\Re\DeclareMathOperator{\Re}{Re}
+\undef\Im\DeclareMathOperator{\Im}{Im}
+
+\AtBeginDocument{%
+\def\sectionautorefname{Sec.}
+\def\subsectionautorefname{Sec.}
+\def\subsubsectionautorefname{Sec.}}
+
+\title{Formalizing the divergence theorem and the Cauchy integral formula in Lean}
+
+\newcommand{\mathlibref}[2]{\href{https://leanprover-community.github.io/mathlib_docs/find/#1}{#2}}
+
+%Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\EventEditors{John Q. Open and Joan R. Access}
+\EventNoEds{2}
+\EventLongTitle{42nd Conference on Very Important Topics (CVIT 2016)}
+\EventShortTitle{CVIT 2016}
+\EventAcronym{CVIT}
+\EventYear{2016}
+\EventDate{December 24--27, 2016}
+\EventLocation{Little Whinging, United Kingdom}
+\EventLogo{}
+\SeriesVolume{42}
+\ArticleNo{23}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+  I formalize a version of the divergence theorem for a function on a
+  rectangular box that does not assume regularity of individual
+  partial derivatives, only Fréchet differentiability of the vector
+  field and integrability of its divergence. Then I use this theorem
+  to prove Cauchy-Goursat theorem (for some simple domains) and
+  bootstrap complex analysis in the Lean mathematical library. The
+  main tool is the GP-integral, a version of the Henstock-Kurzweil
+  integral introduced by J. Mawhin in 1981. The divergence theorem for
+  this integral does not require any regularity assumptions on the
+  derivative of a vector field.
+\end{abstract}
+
+\section{Introduction}\label{sec:introduction}
+The divergence theorem says that under certain assumptions, the
+integral of the divergence of a vector field over a region is equal to
+the flow of this vector field through the boundary of the region. For
+a rectangular region on the plane, this can be written as
+\begin{equation}
+  \label{eqn:green-rect}
+  \int_{a}^{b}\int_{c}^{d}\frac{\partial f(x, y)}{\partial x}+\frac{\partial g(x, y)}{\partial y}dydx=
+  \int_{a}^{b}g(x, d)-g(x, c)dx+\int_{c}^{d}f(x, b)-f(x, a)dy,
+\end{equation}
+where \(f, g\colon \bbR^{2}\to E\) are functions from the plane to
+some Banach space. This statement is also known as Green's theorem.
+For \(C^{1}\) smooth functions \(f\), \(g\), the equality immediately
+follows the Fundamental Theorem of Calculus and the Fubini Theorem.
+
+If \(F\colon \bbC\to E\) is a complex differentiable function, then due
+to Cauchy-Riemann relations, the left hand side of Green's theorem
+applied to \(f(x, y)=F(x+iy)\) and \(g(x, y)=iF(x+iy)\) is zero, and
+we get
+\href{https://en.wikipedia.org/wiki/Cauchy's_integral_theorem}{Cauchy's
+  integral theorem} (a.k.a. Cauchy-Goursat theorem) for a rectangle.
+
+There is a gap in the proof outlined above: I explained how to prove
+the Green's formula for a \emph{continuously differentiable} function
+but the Cauchy-Goursat theorem works for any \emph{complex
+  differentiable} function. A common misbelieve is that this makes
+Green's formula (and divergence theorem) unusable for Cauchy-Goursat
+theorem, and one has to prove it using an explicit infinite descend.
+
+The goal of this project is to formulate a version of the divergence
+theorem that implies the Cauchy-Goursat theorem without any
+assumptions on the derivative of a complex differentiable function. It
+was originally inspired by a version of the divergence theorem
+in~\cite{TODO} that works for a vector field with \emph{continuous
+  divergence}, though the actual proof I formalized is very different.
+
+Here is the list of most important definitions and theorems I
+formalize in this project.
+\begin{itemize}
+\item Riemann, McShane, Henstock-Kurzweil, and GP integrals of a
+  function from a box in \(\bbR^{n}\) to a real Banach space, see
+  \cref{sec:henst-kurzw-informal,sec:GP-impl};
+\item the divergence theorem for the GP integral, see
+  \cref{thm:divergence,lst:divergence-GP};
+\item the divergence theorem for the Bochner integral, see
+  \cref{thm:divergence-Bochner,lst:divergence-bochner};
+\item the Cauchy-Goursat theorem for rectangles, annuli, and disks,
+  see \cref{lst:cauchy-rect,lst:cauchy-annulus,lst:cauchy-circle};
+\item the Cauchy integral formula for a disk, see \cref{lst:cauchy-int};
+\item analyticity of a complex differentiable function, see
+  \cref{lst:diff-analytic};
+\item the maximum modulus principle.
+\end{itemize}
+
+Most of these theorems were formalized earlier in other theorem
+provers (e.g., the Green's formula was formalized in
+Isabelle~\cite{TODO} and large chunks of complex analysis were
+formalized in Isabelle~\cite{TODO} and HOL-Light~\cite{TODO}).
+However, as far as I know, this is the first project where the
+Cauchy-Goursat theorem is formalized as a corollary of the divergence
+theorem. Also, the assumptions in the Cauchy-Goursat theorem are
+slightly weaker than in most textbooks.
+
+\section{Structure of the paper}%
+\label{sec:structure-paper}
+
+In \autoref{sec:gener-diverg-theor} I informally discuss different
+ways to formalize the Green's theorem mentioned above. TODO
+
+\section{Generalizations of the divergence theorem}%
+\label{sec:gener-diverg-theor}
+
+The divergence theorem for \(C^{1}\) vector fields on rectangular
+boxes can be generalized in a few different directions, leading to
+several theorems none of which implies the others.
+
+\paragraph*{Shape of the domain}
+One natural direction of generalization is to deal with
+non-rectangular domains. Usually, Green's formula is stated for a
+union of elementary regions. This generalization is done (in dimension
+two) in Isabelle several years ago, see~\cite{Abdulaziz_Paulson} for
+details. I only deal with rectangular boxes, so I am not going to
+discuss this in any more details.
+
+% https://www.cl.cam.ac.uk/~lp15/papers/Formath/Greens-theorem.pdf
+
+\paragraph*{More general codomain}
+Another possible direction of generalization is to deal with functions
+\(f\colon \bbR^{n}\to E^{n}\), where \(E\) is a real Banach space,
+instead of vector fields \(v\colon \bbR^{n}\to\bbR^{n}\).  Most proofs
+that work for a vector field can be generalized to this case with no
+or little modifications. I deal with functions \(\bbR^{n}\to E^{n}\)
+right away.
+
+\paragraph*{Integrable partial derivatives}
+It is easy to see that the standard proof based on Fubini theorem and
+FTC works for a function \(f\colon \bbR^{n}\to E^{n}\) such that the
+partial derivatives \(\frac{\partial f_{i}(x)}{\partial x_{i}}\) exist
+at all points of the box and are integrable on the whole box.
+
+Neither this generalization, nor the next one imply each other. I
+formalized the other one because it implies Cauchy--Goursat theorem.
+
+TODO: formalize this one if I have a spare evening before the deadline.
+
+\paragraph*{Fréchet differentiability}
+Recall that a function \(f\colon E_{1}\to E_{2}\) between normed
+vector spaces is called \emph{Fréchet differentiable} at a point \(x\)
+with derivative given by a continuous linear map
+\(f'\colon E_{1}\to E_{2}\) if \(f(x+y)=f(x)+f'(y)+o(y)\) as
+\(y\to 0\). Clearly, a Fréchet differentiable function \(f\colon \)has all partial
+derivatives and they are equal to the values of \(f'\) on the basis
+vectors.
+
+In 1981, Mawhin~\cite{Mawhin81} introduced a generalization of
+Henstock-Kurzweil integral he called \emph{GP-integral} (probably from
+\emph{generalized Perron}). This integral allows us to prove the
+following theorem.
+
+\begin{theorem}%
+  [see~\cite{TODO}]%
+  \label{thm:divergence}
+  Let \(E\) be a real Banach space. Let \(f\colon \bbR^{n}\to E\) be a
+  function that is Fréchet differentiable at all points of a closed
+  box \(\overline I=[a, b]\).
+
+  Then for each \(i=1,\dots,n\), the partial derivative
+  \(\frac{\partial f}{\partial x_{i}}\) is GP-integrable on \(I\) and
+  its integral equal to the difference of the integrals of \(f\) over
+  the faces \(x_{i}=b_{i}\) and \(x_{i}=a_{i}\) of \(I\).
+
+  In particular, for a function \(f\colon \bbR^{n}\to E^{n}\), the
+  divergence \(\divg f\) is GP-integrable on \(I\) and its integral is
+  equal to the sum of integrals of \(f\) over the faces of \(I\) with
+  appropriate signs.
+\end{theorem}
+
+Compared to the previous generalization, this one requires
+differentiability in a stronger sense (Fréchet differentiability
+instead of existence of one partial derivative) but it requires less
+regularity from the derivatives (no requirements for the GP-integral
+and integrability of the divergence instead of integrability of
+partial derivatives for most other integrals).
+
+\paragraph*{Weaker assumptions on a subset of the box}
+
+One can push arguments in the proofs discussed above to weaken the
+regularity assumptions on a “small” subset of the box.
+
+I prove that \autoref{thm:divergence} works even if on some countable
+subset of the box the function is continuous, not differentiable. It
+is possible to push these arguments even further (especially if we use
+another generalization of the Henstock-Kurzweil integral) but I did
+not formalize these theorems (yet).
+
+\section{Henstock-Kurzweil integral: informal description}\label{sec:henst-kurzw-informal}
+
+While my main goal was to prove the divergence theorem for the Bochner
+integral, I first proved the divergence theorem for the GP-integral,
+see below. This integral is one of possible generalizations of the
+Henstock-Kurzweil integral to higher dimension. In this section I
+recall the relevant definitions and theorems.
+
+\subsection{Henstock-Kurzweil integral in dimension one}\label{sec:HK-integral-dim1}
+First recall the definition of the one-dimensional Henstock-Kurzweil integral.
+
+\begin{definition}
+  We say that a tagged partition \(a=x_{0}<x_{1}<\cdots<x_{k}=b\) with
+  tags \(\xi_{i}\in[x_{i}, x_{i+1}]\), \(0\le i<k\), is
+  \emph{subordinate} to a function \(\delta\colon[a, b]\to \bbR\) if
+  \([x_{i}, x_{i+1}]\subset [\xi_{i}-\delta(\xi_{i}),
+  \xi_{i}+\delta(\xi_{i})]\) for all \(0\le i<k\).
+
+  We say that \(f\colon \bbR\to E\) has the Henstock-Kurzweil integral
+  \(c\) over an interval \([a, b]\), \(\int_{a}^{b}f(x)\,dx=c\), if
+  for any \(\eps>0\) there exists an everywhere positive function
+  \(\delta\colon [a, b]\to \bbR\) such that for any tagged partition
+  \((\set{x_{i}}, \set{\xi_{i}})\) subordinate to \(\delta\), the
+  Riemann sum
+  \(\displaystyle\sum_{i=0}^{k-1}f(\xi_{i})(x_{i+1}-x_{i}) \) is
+  \(\eps\)-close to \(c\).
+\end{definition}
+
+Slight modifications of this definitions give the integrals of Riemann
+(we require \(\delta\) to be a constant) and McShane (we no longer
+require that tags belong to their intervals but still require
+\(\xi_{i}\in[a, b]\)).
+
+A well-known property of the Henstock-Kurzweil integral is the
+following form of the Fundamental Theorem of Calculus.
+\begin{theorem}
+  Let \(E\) be a real Banach space. Let \(f\colon \bbR\to E\) be a
+  function differentiable on an interval \([a, b]\). Then its
+  derivative is Henstock-Kurzweil integrable on \([a, b]\) and the
+  integral is equal to \(f(b)-f(a)\).
+\end{theorem}
+
+The one-dimensional Henstock-Kurzweil integral is not a part of
+\texttt{mathlib} and I decided not to formalize it. When we need it,
+it will be easy to define it as a thin wrapper on top of the
+Henstock-Kurzweil integral over a box in \lstinline+ℝ¹ = fin 1 → ℝ+.
+
+\subsection{Henstock-Kurzweil integral in higher dimension}%
+\label{sec:HK-integral-dim-n}
+
+We will need a few definitions to generalize Henstock-Kurzweil
+integral to functions \(f\colon \bbR^{n}\to E\).
+
+\begin{definition}
+  The \emph{open box} \((a, b)\) is the product of open intervals
+  \((a_{i}, b_{i})\):
+  \((a, b)=\set{x\in\bbR^{n}|\forall i, x_{i}\in(a_{i}, b_{i})}\). The
+  \emph{open-closed box} \((a, b]\) and the \emph{closed box}
+  \([a, b]\) are defined in a similar way.
+
+  A \emph{partition} of an open-closed box \(I=(a, b]\) is a finite
+  collection of pairwise disjoint boxes \(J_{k}=(a_{k}, b_{k}]\) that
+  cover \(I\).
+
+  A \emph{tagged partition} of an open-closed box \(I=(a, b]\) is a partition
+  \(\set{J_{k}}\) together with a collection of points called
+  \emph{tags} \(\xi_{k}\in [a, b]\), one per each box of the partition.
+
+  A \emph{Henstock tagged partition} is a tagged partition such that
+  each tag belongs to the corresponding closed box:
+  \(\xi_{k}\in [c_{k}, d_{k}]\), where \(J_{k}=(c_{k}, d_{k}]\).
+
+  A tagged partition \(\set{(J_{k}, \xi_{k})}\) of a box \(I\) is
+  \emph{subordinate} to a gauge function
+  \(\delta\colon \bbR^{n}\to\bbR_{>0}\) if each box \(J_{k}\) is
+  included by the closed box
+  \(B_{\delta(\xi_{k})}(\xi_{k})=[\xi_{k}-\delta(\xi_{k}),
+  \xi_{k}+\delta(\xi_{k})]\).
+\end{definition}
+
+Now we are ready to define the Henstock-Kurzweil integral of a
+function \(f\colon \bbR^{n}\to E\) over a box \(I\).
+\begin{definition}
+  Let \(E\) be a real Banach space. We say that a function
+  \(f\colon \bbR^{n}\to E\) is \emph{Henstock-Kurzweil integrable} on
+  \(I\) with integral \(c\) if for any \(\eps>0\) there exists a gauge
+  function \(\delta\colon \bbR^{n}\to \bbR_{>0}\) such that for any
+  Henstock tagged partition \(\set{(J_{k}, \xi_{k})}\) of \(I\) that
+  is subordinate to \(\delta\), the Riemann sum of \(f\) over this
+  partition is \(\eps\)-close to \(c\).
+\end{definition}
+
+Divergences of some vector fields are not integrable in the sense of
+this definition (and any other generalization of Henstock-Kurzweil
+integral that satisfies Fubini theorem, see~\cite{Pfeffer93}), so we
+need another generalization to prove the divergence theorem.
+
+There are several generalizations of the Henstock-Kurzweil such that
+the divergence of any Fréchet differentiable function is integrable.
+We use the one suggested by Mawhin~\cite{Mawhin81}.
+
+\begin{definition}
+  The \emph{irregularity} (or \emph{distortion}) \(\Sigma(\pi)\) of a
+  partition \(\pi=\set{J_{k}}\) is the maximum of rates of stretching
+  \(\sigma(J_{k})\) of the boxes \(J_{k}\).
+
+  A function \(f\colon \bbR^{n}\to E\) is \emph{GP-integrable} on a
+  box \(I\) with integral \(c\) if for any \(\eps>0\) and a real
+  number \(d\) there exists a gauge function
+  \(\delta\colon \bbR^{n}\to \bbR_{>0}\) such that for any Henstock
+  tagged partition \(\set{(J_{k}, \xi_{k})}\) of \(I\) that is
+  subordinate to \(\delta\) and has distortion less than \(d\), the
+  Riemann sum of \(f\) over this partition is \(\eps\)-close to \(c\).
+\end{definition}
+
+I formalized this definition (together with a few other definitions of
+“box” integrals) and a proof of \autoref{thm:divergence}.
+
+In dimension two, this theorem implies~\eqref{eqn:green-rect} for any
+pair of functions \(f, g \colon \bbR^{2}\to E^{2}\) Fréchet
+differentiable on a closed rectangle.
+
+\subsection{Application to the Bochner integral}
+
+Mathlib project uses the Bochner integral as its main
+integral. A~Bochner integrable function is McShane integrable (hence,
+Henstock-Kurzweil and GP integrable), thus \autoref{thm:divergence}
+holds for the Bochner integral if we assume that the divergence is
+Bochner integrable on the box. Taking the limit over an exhaustion of
+the box by smaller boxes, one can generalize the theorem to functions
+that are differentiable in the interior of a box and continuous on the
+whole box. Here is the precise statement of the divergence theorem for
+Bochner integral.
+
+\begin{theorem}%
+  [see~\cite{TODO}]%
+  \label{thm:divergence-Bochner}
+  Let \(E\) be a real Banach space with second countable
+  topology\footnote{This is a technical assumption required because of
+    the way Bochner integral is defined in mathlib.}. Let
+  \(I=(a,b]\subset\bbR^{n}\) be an open-closed box.
+
+  Let \(s \subset\bbR^{n}\) be a countable set. Let
+  \(f\colon \bbR^{n}\to E^{n}\) be a function that is continuous on
+  \(\overline I\) and is Fréchet differentiable at all points of
+  \(\mathring I \setminus s\). Assume that the divergence
+  \(\divg f=\sum_{i=1}^{n}\frac{\partial f_{i}}{\partial x_{i}}\) is
+  Bochner integrable on \(I\). Then its integral is equal to the sum
+  of integrals of \(f\) over the faces of \(\overline I\) taken with
+  appropriate signs (plus for the integral over a front face
+  \(x_{i}=b_{i}\) and minus for the integral over a back face).
+\end{theorem}
+
+\section{Divergence theorem: design choices and implementation details}%
+\label{sec:GP-impl}
+The following notation is heavily used in the code below and is
+specific to \texttt{mathlib} and/or this project.
+
+\noindent%
+\begin{tabular}{rp{12cm}}
+  \lstinline=Icc a b=& the closed interval \([a, b]\);\\
+  \lstinline=Ioo a b= & the open interval \((a, b)\);\\
+  \lstinline=Ioc a b= & the open-closed interval \((a, b]\);\\
+  \lstinline=ICC a b=& the unordered closed interval \([\min(a, b), \max(a, b)]\);\\
+  \lstinline=IOO a b=& the unordered open interval \((\min(a, b), \max(a, b))\);\\
+  \lstinline=ℝⁿ=& the vector space \(\bbR^{n}\), implemented as \lstinline=fin n → ℝ=,
+                  where \lstinline+fin n+ is the canonical type with \(n\) elements\\
+  \lstinline=ℝ>0, ℝ≥0= & the types of positive and nonnegative real numbers, respectively;\\
+  \lstinline=I= & the imaginary unit;\\
+  \lstinline=s ×ℂ t= & the product of sets on the real and imaginary axes in \(\bbC\).
+\end{tabular}
+
+\subsection{Boxes}\label{sec:boxes}
+
+A nonempty open-closed box in \(\bbR^{n}\) is defined as the following
+structure.
+
+\begin{lstlisting}[caption=Definition of a box]
+structure box (n : ℕ) :=
+(lower upper : ℝⁿ)
+(lower_lt_upper : ∀ i, lower i < upper i)
+\end{lstlisting}
+
+The membership of a vector \lstinline{x : ℝⁿ} in a box is defined by
+
+\begin{lstlisting}
+instance : has_mem (ℝⁿ) (box n) :=
+⟨λ x I, ∀ i, x i ∈ Ioc (I.lower i) (I.upper i)⟩
+\end{lstlisting}
+and the order is the inclusion order on the corresponding sets.
+
+I chose to explicitly deny empty boxes because this way the
+\lstinline{lower} and \lstinline{upper} vertices are uniquely defined
+by the set of points that belong to the box. The empty box is
+represented as the bottom element of \lstinline{⊥ : with_bot (box n)},
+where \lstinline{with_bot α} is the type \lstinline={⊥} ∪ α=,
+implemented as a type synonym for \lstinline{option α} with custom order.
+
+The type \lstinline=with_bot (box n)= is a lattice, where the meet of
+two boxes is there intersection and the join of two boxes is the
+minimal box that includes both of them.
+
+For an open-closed box \lstinline{I : box n}, \lstinline{I.Ioo} and
+\lstinline{I.Icc} are the corresponding open and closed boxes,
+respectively.
+
+Given a box \lstinline=I : box (fin (n + 1))= and an index
+\lstinline=i : fin (n + 1)=, I define the \(i\)-th \emph{face} of
+\(I\) to be the box with lower and upper vertices given by
+\lstinline=I.lower ∘ i.succ_above= and
+\lstinline=I.upper ∘ i.succ_above=, where
+\lstinline=i.succ_above : fin n → fin (n + 1)= is the unique monotone
+embedding with leaving a \enquote{hole} at \(i\): it sends \(j<i\) to
+\(j\) and \(j\ge i\) to \(j+1\). I also define two embeddings
+\lstinline=I.front_face i, I.back_face i : ℝⁿ → ℝⁿ⁺¹= that insert
+\lstinline=I.upper i= and \lstinline=I.lower i=, respectively, as the
+\(i\)-th coordinate. These embeddings map \lstinline=I.face i= to two
+the faces \lstinline+x i = I.upper i+ and \lstinline+x i = I.lower i+
+of \(I\).
+
+\subsection{Partitions}\label{sec:partitions}
+
+Recall that a \emph{partition} of a box \(I\) is a finite collection
+of pairwise disjoint boxes that cover \(I\). Sometimes it is useful to
+deal with a collection of pairwise disjoint boxes that cover only a
+part of \(I\), so I define a \emph{prepartition} of a box
+
+\begin{lstlisting}[caption=Definition of a prepartition]
+structure prepartition (I : box n) :=
+(boxes : finset (box n))
+(le_of_mem' : ∀ J ∈ boxes, J ≤ I)
+(pairwise_disjoint : pairwise boxes (disjoint on (coe : box n → set ℝⁿ)))
+\end{lstlisting}
+
+and a predicate saying that a prepartition is actually a partition
+
+\begin{lstlisting}[caption={A prepartition is a partition if it covers the whole box}]
+def prepartition.is_partition (π : prepartition I) : Prop :=
+∀ x ∈ I, ∃ J ∈ π, x ∈ J
+\end{lstlisting}
+
+Then I establish basic API about (pre)partitions, most notably the
+following predicates, relations, and operations.
+
+\noindent%
+\begin{tabular}{rp{10cm}}
+  \(\pi_{1}\le\pi_{2}\)&we say that one prepartition is less than or equal to another if each box of the former is included in some box of the latter; with this order, we get a bounded meet-semilattice structure on prepartitions of a box;\\
+  \lstinline=Union=&the union of all boxes of a prepartition, as a set in \(\bbR^{n}\); for a partition, this union is equal to the original box;\\
+  \lstinline=bUnion=&given a prepartition \(\pi\) of \(I\) and a function \(\pi'\) that sends each box in \(\bbR^{n}\) to a prepartition of that box, returns the prepartition of \(I\) formed by the boxes of \(\pi' J\), \(J \in \pi\);\\
+  \lstinline=split_center=&the partition of a box into \(2^{n}\) subboxes by the hyperplanes passing through the center of the box;\\
+  \lstinline=split=&the partition of a box into two subboxes by a hyperplane (or the trivial one-box partition if the hyperplane does not meet the box);\\
+  \lstinline=compl=&an unspecified prepartition such that \lstinline~π.compl.Union = I \ π.Union~; I prove that it exists, then use the axiom of choice to get a witness.
+\end{tabular}
+
+\subsection{Cousin's lemma}\label{sec:cousins-lemma}
+
+Cousin's lemma says that for any gauge function
+\(\delta\colon\bbR^{n}\to\bbR_{>0}\) and a box, there exists a tagged
+partition of this box that is subordinate to \(\delta\). This lemma is
+needed to show that the Henstock-Kurzweil integral is well defined: if
+it was false, any number would be the Henstock-Kurzweil integral of
+any function.
+
+I prove two versions of this lemma. First I prove the lemma as stated
+in the previous paragraph with an additional assertion that all boxes
+of the partition are homothetic to the original box.
+
+\begin{lstlisting}[caption={Cousin's lemma, version 1}]
+lemma box.exists_tagged_partition_is_Henstock_is_subordinate_homothetic
+  (I : box n) (r : ℝⁿ → ℝ>0) :
+  ∃ π : tagged_prepartition I, π.is_partition ∧ π.is_Henstock ∧ π.is_subordinate r ∧
+    (∀ J ∈ π, ∃ m : ℕ, ∀ i, (J : _).upper i - J.lower i = (I.upper i - I.lower i) / 2 ^ m) ∧
+    π.distortion = I.distortion
+\end{lstlisting}
+
+Then I use it to prove that for any prepartition there exists a
+refinement of this prepartition with the same distortion and a choice
+of Henstock tagged prepartition that is subordinate to a given gauge
+function, covers the same part of the original box, and has the same
+distortion.
+
+\begin{lstlisting}[caption={Cousin's lemma, version 2}]
+lemma prepartition.exists_tagged_le_is_Henstock_is_subordinate_Union_eq
+  (r : ℝⁿ → ℝ>0) (π : prepartition I) :
+  ∃ π' : tagged_prepartition I, π'.to_prepartition ≤ π ∧
+    π'.is_Henstock ∧ π'.is_subordinate r ∧ π'.distortion = π.distortion ∧
+    π'.Union = π.Union :=
+\end{lstlisting}
+
+\subsection{The filters}\label{sec:filters}
+
+Different “box” integrals (Riemann, McShane, Henstock-Kurzweil, GP)
+are defined as the limits of the Riemann sums along some filters on
+the space of partitions of a box.
+
+I define the following structure that holds data needed to define
+either of these four integrals and a few more.
+
+\begin{lstlisting}
+structure integration_params : Type :=
+(bRiemann bHenstock bDistortion : bool)
+\end{lstlisting}
+
+The parameters have the following meaning:
+
+\noindent%
+\begin{tabular}{rp{10cm}}
+  \lstinline=bRiemann=&this is a Riemann integral, the gauge function must be a constant;\\
+  \lstinline=bHenstock=&tags must belong to the closure of their boxes;\\
+  \lstinline=bDistortion=&this is a regular integral, the gauge function may depend on the distortion of a partition;
+\end{tabular}
+
+E.g., the following integration parameters are used to define the
+Riemann, Henstock-Kurzweil, McShane, and GP integrals.
+\begin{lstlisting}[caption={Parameters corresponding to well-known integrals}]
+def Riemann : integration_params :=
+{ bRiemann := tt,
+  bHenstock := tt,
+  bDistortion := ff }
+
+def Henstock : integration_params :=
+{ bRiemann := ff,
+  bHenstock := tt,
+  bDistortion := ff }
+
+def McShane : integration_params :=
+{ bRiemann := ff,
+  bHenstock := ff,
+  bDistortion := ff }
+
+def GP : integration_params :=
+{ bRiemann := ff,
+  bHenstock := tt,
+  bDistortion := tt }
+\end{lstlisting}
+
+On the one hand, this design choice allows me to prove some lemmas
+(e.g., Henstock-Sacks inequality, see below) uniformly for all these
+integrals. On the other hand, it is hard to add more integrals (e.g.,
+those defined in~\cite{TODO}) to the hierarchy.
+
+I require that the gauge function satisfies the following
+condition. If \lstinline=l.bRiemann= is false, then this condition is
+trivial, otherwise it says that the gauge function is actually a
+constant function.
+
+\begin{lstlisting}[caption={Condition on the gauge function}]
+def r_cond {n : ℕ} (l : integration_params) (r : ℝⁿ → ℝ>0) : Prop :=
+l.bRiemann → ∀ x, r x = r 0
+\end{lstlisting}
+
+For each set of parameters \lstinline=l : integration_params= and a
+box~\(I\), we define several filters on the space of prepartitions of
+\(I\). All these filters have basis sets of the same type.
+
+\begin{lstlisting}[caption={Basis sets used to define filters related to integration parameters.}]
+structure mem_base_set (l : integration_params) (I : box n) (c : ℝ≥0)
+  (r : ℝⁿ → ℝ>0) (π : tagged_prepartition I) : Prop :=
+(is_subordinate : π.is_subordinate r)
+(is_Henstock : l.bHenstock → π.is_Henstock)
+(distortion_le : l.bDistortion → π.distortion ≤ c)
+(exists_compl : l.bDistortion → ∃ π' : prepartition I,
+  π'.Union = I \ π.Union ∧ π'.distortion ≤ c)
+\end{lstlisting}
+
+We already saw the first three assumptions in the informal definition
+of the GP-integral. The last assumption is trivial if \(\pi\) is a
+partition (then we can choose \(\pi'\) to be the empty
+prepartition). One can show that it is also trivial whenever \(c>1\)
+but I decided to cut off a corner here and introduce this assumption
+instead adding an explicit assumption \(c>1\) here and there and of
+proving one more lemma.
+
+The most important filter related to a set of integration parameters
+is the filter \lstinline=to_filter_Union= below. The Cousin's lemma
+from \autoref{sec:cousins-lemma} implies that this filter is
+nontrivial. The actual definition uses more intermediate filters but
+the result is equal (though not definitionally equal) to the code in
+the listing below.
+
+\begin{lstlisting}
+def to_filter (l : integration_params) (I : box n) :
+  filter (tagged_prepartition I) :=
+⨆ c : ℝ≥0, ⨅ (r : ℝⁿ → ℝ>0) (hr : l.r_cond r),
+  𝓟 {π | l.mem_base_set I c r π}
+
+def to_filter_Union (l : integration_params) (I : box n) (π₀ : prepartition I) :=
+l.to_filter I ⊓ 𝓟 {π | π.Union = π₀.Union}
+\end{lstlisting}
+
+The filter \lstinline=to_filter= is useful to prove facts about
+integrals on subboxes.
+
+\subsection{Box integral}%
+\label{sec:box-integral}
+
+The box integral of a function \(f\colon\bbR^{n}\to E\) on an
+open-closed box \(I\) in the sense of integration parameters \(l\) is
+defined as the limit of the Riemann sum over a partition \(\pi\) of
+\(I\) along the filter \lstinline=l.to_filter_Union ⊤=, where
+\lstinline=⊤= is the one-box partition of~\(I\). If the limit does not
+exist, then the integral is defined to be zero.
+
+I define the integral of a function \(f\colon \bbR^{n}\to E\) with
+respect to a box-additive volume taking values in the space of
+continuous linear functions \lstinline=E →L[ℝ] F=. This way one can
+use the same definition, e.g., for Riemann-Stieltjes
+integrals. However, I never used it for functions other than the
+volumes defined by measures, so possibly this generalization is a case
+of overengineering.
+
+\begin{lstlisting}[caption={Definition of the box integral}]
+def has_integral (I : box ι) (l : integration_params) (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F))
+  (y : F) : Prop :=
+tendsto (integral_sum f vol) (l.to_filter_Union I ⊤) (𝓝 y)
+
+def integrable (I : box ι) (l : integration_params) (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F)) :=
+∃ y, has_integral I l f vol y
+
+def integral (I : box ι) (l : integration_params) (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F)) :=
+if h : integrable I l f vol then h.some else 0
+\end{lstlisting}
+
+Usual theorems (uniqueness of the integral, Cauchy convergence test,
+additivity) immediately follow from the definition and properties of
+the limit.
+
+\subsection{Divergence theorem for the GP-integral}%
+\label{sec:diverg-theor-gp}
+
+To prove the divergence theorem for the GP-integral
+\autoref{thm:divergence}, we prove that each partial derivative is
+GP-integrable with the integral equal to the difference of the
+integral of the original function over the front and back faces of the
+box.
+
+\begin{lstlisting}[caption={Key lemma for the divergence theorem for the GP-integral}]
+lemma has_integral_GP_pderiv (f : ℝⁿ⁺¹ → E) (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] E)
+  (s : set (ℝⁿ⁺¹)) (hs : countable s)
+  (Hs : ∀ x ∈ s, continuous_within_at f I.Icc x)
+  (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
+  (i : fin (n + 1)) :
+  has_integral I GP (λ x, f' x (pi.single i 1)) dV
+    (integral (I.face i) GP (f ∘ I.front_face i) dV -
+      integral (I.face i) GP (f ∘ I.back_face i) dV)
+\end{lstlisting}
+Here \lstinline=pi.single i 1= is the \(i\)-th basis vector in
+\(\bbR^{n+1}\). The actual statement also uses a longer name instead
+of \(dV\).
+
+The sum of these statements for all terms of the divergence gives us
+the divergence theorem.
+
+\begin{lstlisting}[caption={The divergence theorem for the GP-integral},label=lst:divergence-GP]
+lemma has_integral_GP_divergence_of_forall_has_deriv_within_at
+  (f : ℝⁿ⁺¹ → Eⁿ⁺¹) (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹)
+  (s : set ℝⁿ⁺¹) (hs : countable s)
+  (Hs : ∀ x ∈ s, continuous_within_at f I.Icc x)
+  (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x) :
+  has_integral I GP (λ x, ∑ i, f' x (pi.single i 1) i) dV
+    (∑ i, (integral (I.face i) GP (f ∘ I.front_face i) dV -
+      integral (I.face i) GP (f ∘ I.back_face i) dV))
+\end{lstlisting}
+
+The proof of the main lemma follows the same scheme as the standard
+proof of the Fundamental Theorem of Calculus for the Henstock-Kurzweil
+integral: given a positive number \(\eps\) and an upper estimate \(c\)
+on the distortion of the partition, for each point \(x\) of
+differentiability, one can choose \(\delta(x)>0\) such that the
+estimate \(f(y)=f(x)+f'(x)(y-x)+o(y-x)\) and \(\Sigma(\pi)\le c\)
+imply that the difference between the difference of the integrals of
+\(f\) over the \(i\)-th front and back faces of a \(\delta(x)\)-small
+box \(J\ni x\) is \(\eps V(J)\)-close to the term
+\(\frac{\partial f}{\partial x_{i}}V(J)\) of the Riemann sum for the
+integral of the partial derivative.
+
+I do one modification to this argument that allows me to use weaker
+assumptions on a countable set of points. Namely, for \(x\in s\) I
+choose \(\delta(x)\) so that for a \(\delta(x)\)-small box \(J\ni x\),
+the term corresponding to this box has norm less than \(\kappa(x)>0\),
+where \(\sum_{x\in s}\kappa(x)<\eps/2\). This is possible due to the
+continuity of \(f\) at \(x\).
+
+\subsection{McShane and Bochner integrability}%
+\label{sec:mcsh-bochn-integr}
+
+The Lean mathematical library uses the Bochner integral as its main
+definition of an integral. This integral is a generalization of the
+Lebesgue integral, see~\cite{TODO} for details. In order to transfer
+the result from the GP-integral to the Bochner integral, I prove that
+any Bochner integrable function is integrable in the sense of any box
+integral with \lstinline~bRiemann = ff~. In other words, a Bochner
+integrable function is integrable in the sense of the McShane,
+Henstock-Kurzweil, and GP-integrals.
+
+\begin{lstlisting}
+lemma integrable_on.has_box_integral [second_countable_topology E] [measurable_space E]
+  [borel_space E] [complete_space E] {f : (ι → ℝ) → E} {μ : measure (ι → ℝ)}
+  [is_locally_finite_measure μ] {I : box ι} (hf : integrable_on f I μ) (l : integration_params)
+  (hl : l.bRiemann = ff) :
+  has_integral I l f μ.to_box_additive.to_smul (∫ x in I, f x ∂ μ)
+\end{lstlisting}
+
+The proof follows~\cite{TODO}, with some modifications required to
+generalize it from a function \(f\colon\bbR\to\bbR\) to a function
+\(f\colon\bbR^{n}\to E\).
+
+\subsection{Divergence theorem for the Bochner integral}%
+\label{sec:diverg-theor-bochn}
+
+Since any Bochner integrable function is GP-integrable, we immediately
+obtain the following result for the Bochner integral.
+
+\begin{lstlisting}
+lemma aux (I : box (fin (n + 1))) (f : ℝⁿ⁺¹ → Eⁿ⁺¹) (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹)
+  (s : set ℝⁿ⁺¹) (hs : countable s)
+  (Hc : continuous_on f I.Icc) (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
+  (Hi : integrable_on (λ x, ∑ i, f' x (e i) i) I.Icc) :
+  ∫ x in I.Icc, ∑ i, f' x (e i) i =
+    ∑ i : fin (n + 1),
+      ((∫ x in (I.face i).Icc, f (I.front_face i x) i) -
+        ∫ x in (I.face i).Icc, f (I.back_face i x) i)
+\end{lstlisting}
+
+I slightly generalize this result. First, I drop the differentiability
+assumption on the boundary of~\(I\). To do this, I apply the auxiliary
+result to an increasing sequence of subboxes that cover the interior
+of \(I\). Second, I allow \(a_{i}=b_{i}\); in this case both sides are
+equal to zero.
+
+In the following statement, I heavily use local notation to make it
+more readable.
+\begin{lstlisting}[caption={The divergence theorem for the Bochner integral},label=lst:divergence-bochner]
+local notation `ℝⁿ⁺¹` := fin (n + 1) → ℝ
+local notation `Eⁿ⁺¹` := fin (n + 1) → E
+local notation `e` i := pi.single i 1
+
+local notation `face` i := set.Icc (a ∘ fin.succ_above i) (b ∘ fin.succ_above i)
+local notation `front_face` i:2000 := fin.insert_nth i (b i)
+local notation `back_face` i:2000 := fin.insert_nth i (a i)
+
+lemma integral_divergence_of_has_fderiv_within_at_off_countable
+  {n : ℕ} (a b : ℝⁿ⁺¹) (hle : a ≤ b) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
+  (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹) (s : set ℝⁿ⁺¹) (hs : countable s)
+  (Hc : continuous_on f (Icc a b))
+  (Hd : ∀ x ∈ pi univ (λ i, Ioo (a i) (b i)) \ s, has_fderiv_at f (f' x) x)
+  (Hi : integrable_on (λ x, ∑ i, f' x (e i) i) (Icc a b)) :
+  ∫ x in Icc a b, ∑ i, f' x (e i) i =
+    ∑ i : fin (n + 1), ((∫ x in face i, f (front_face i x) i) -
+      ∫ x in face i, f (back_face i x) i)
+\end{lstlisting}
+
+\section{Applications to complex analysis}%
+\label{sec:appl-compl-analys}
+
+The main goal of the project was to formalize a version of the
+divergence theorem that implies the Cauchy integral formula under
+standard assumptions. In this section I will briefly explain how I
+deduce the Cauchy integral formula from
+\autoref{thm:divergence-Bochner}. While many textbooks on complex
+analysis prove these formulas for functions \(f\colon \bbC\to \bbC\), I
+prove them for functions that take values in a complex Banach space
+\(E\). As before, I have to assume that \(E\) has a second countable
+topology because of the way the Bochner integral is defined in
+mathlib.
+
+First, consider an open rectangle
+\(R=\set{z|a\le \Re z\le b,c\le \Im z\le d}\) on the complex
+plane~\(\bbC\). If \(f\colon \bbC\to E\) is continuous on \(R\) and is
+complex differentiable at all but countably many points of the
+interior of~\(R\), then one can apply the divergence theorem to the
+function \(F\colon \bbC \to E^{2}\) given by \(F(z)=(-if(z),
+f(z))\). Due to Cauchy-Riemann equations, the left hand side
+of~\eqref{eqn:green-rect} equals zero. It is easy to see that the
+right hand side is equal to the integral
+\(\int_{\partial R}f(z)\,dz\).
+
+\begin{lstlisting}[caption={Cauchy-Goursat theorem for a rectangle},label=lst:cauchy-rect]
+lemma integral_boundary_rect_eq_zero_of_differentiable_on_off_countable
+  (f : ℂ → E) (z w : ℂ) (s : set ℂ) (hs : countable s)
+  (Hc : continuous_on f (ICC z.re w.re ×ℂ Icc z.im w.im))
+  (Hd : ∀ x ∈ (IOO z.re w.re ×ℂ IOO z.im w.im) \ s,
+    differentiable_at ℂ f x) :
+  (∫ x in z.re..w.re, f (x + z.im * I)) -
+    (∫ x in z.re..w.re, f (x + w.im * I)) +
+    (I • ∫ y in z.im..w.im, f (re w + y * I)) -
+    I • ∫ y in z.im..w.im, f (re z + y * I) = 0 :=
+\end{lstlisting}
+
+To formulate the Cauchy-Goursat theorem for an annulus and a circle, I
+define \(\oint_{|z-c|=R}f(z)\,dz\) as
+\(\int_{0}^{2\pi}(c+Re^{\theta i})'f(c+Re^{\theta i})\,d\theta\).
+
+\begin{lstlisting}[caption=Definition of the circle integral \(\oint_{|z-c|=R}f(z)\,dz\)]
+def circle_map (c : ℂ) (R : ℝ) : ℝ → ℂ := λ θ, c + R * exp (θ * I)
+
+def circle_integral (f : ℂ → E) (c : ℂ) (R : ℝ) : E :=
+∫ (θ : ℝ) in 0..2 * π, deriv (circle_map c R) θ • f (circle_map c R θ)
+\end{lstlisting}
+
+Applying the Cauchy-Goursat theorem for a rectangle to the function
+\(F(z)=e^{z}f(c+e^{z})\) on the rectangle \(\ln r\le \Re z\le \ln R\),
+\(0\le \Im z\le 2\pi\), I prove the Cauchy-Goursat theorem for a
+function differentiable on an annulus.
+
+\begin{lstlisting}[caption=Cauchy-Goursat theorem for an annulus,label=lst:cauchy-annulus]
+lemma circle_integral_eq_of_differentiable_on_annulus_off_countable
+  {c : ℂ} {r R : ℝ} (h0 : 0 < r) (hle : r ≤ R) {f : ℂ → E} {s : set ℂ} (hs : countable s)
+  (hc : continuous_on f (closed_ball c R \ ball c r))
+  (hd : ∀ z ∈ ball c R \ closed_ball c r \ s, differentiable_at ℂ f z) :
+  ∮ z in C(c, R), f z = ∮ z in C(c, r), f z
+\end{lstlisting}
+
+Applying this theorem to \(\frac{f(z)}{z-c}\) and taking the limit as
+\(r\) tends to \(0\) from the right, I prove the Cauchy integral
+formula for the value of a complex differentiable function at the
+center of a disk.
+
+\begin{lstlisting}[caption=Cauchy integral formula for the center of a disk,label=lst:cauchy-int-center]
+lemma circle_integral_sub_center_inv_smul_of_differentiable_on_off_countable {R : ℝ} (h0 : 0 < R)
+  {f : ℂ → E} {c : ℂ} {s : set ℂ} (hs : countable s)
+  (hc : continuous_on f (closed_ball c R)) (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) :
+  ∮ z in C(c, R), (z - c)⁻¹ • f z = (2 * π * I : ℂ) • f c :=
+\end{lstlisting}
+
+Applying this lemma to the function \((z-c)f(z)\), we prove the
+Cauchy-Goursat theorem for a disk.
+
+\begin{lstlisting}[caption=Cauchy-Goursat theorem for a disk,label=lst:cauchy-circle]
+lemma circle_integral_eq_zero_of_differentiable_on_off_countable {R : ℝ} (h0 : 0 ≤ R) {f : ℂ → E}
+  {c : ℂ} {s : set ℂ} (hs : countable s) (hc : continuous_on f (closed_ball c R))
+  (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) :
+  ∮ z in C(c, R), f z = 0 :=
+\end{lstlisting}
+
+Next I show the Cauchy integral formula
+\[
+  f(w)=\frac{1}{2\pi i}\oint_{|z-c|=R}\frac{f(z)}{z-w}\,dz
+\]
+for any point of the open disc, \(|w-c|<R\). To obtain this result, I
+apply the Cauchy-Goursat theorem to the function
+\[
+  g(z)=
+  \begin{cases}
+    f'(w),&\text{if }z=w;\\
+    \frac{f(z)-f(w)}{z-w},&\text{otherwise}.
+  \end{cases}
+\]
+If \(f\) is differentiable at \(w\), then \(g\) satisfies the
+assumptions of the previous theorem, hence the integrals of
+\(\frac{f(z)}{z-w}\) and of \(\frac{f(w)}{z-w}\) over the circle
+\(|z-c|=R\) are equal. It is easy to see that the latter integral
+equals \(2\pi i f(w)\).
+
+If \(w\) belongs to the countable set where \(f\) is not guaranteed to
+be differentiable, then the same formula from the previous case by
+continuity.
+
+\begin{lstlisting}[caption=Cauchy integral formula for a circle,label=lst:cauchy-int]
+lemma two_pi_I_inv_smul_circle_integral_sub_inv_smul_of_differentiable_on_off_countable
+  {R : ℝ} {c w : ℂ} {f : ℂ → E} {s : set ℂ} (hs : countable s) (hw : w ∈ ball c R)
+  (hc : continuous_on f (closed_ball c R)) (hd : ∀ x ∈ ball c R \ s, differentiable_at ℂ f x) :
+  (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - w)⁻¹ • f z = f w :=
+\end{lstlisting}
+
+The Cauchy integral formula immediately implies that a function
+\(f\colon\bbC\to E\) that is complex differentiable on an open disk
+and is continuous on the corresponding closed disk is analytic on the
+open disk.
+
+\begin{lstlisting}[caption=Analyticity of a complex differentiable function,label=lst:diff-analytic]
+def cauchy_power_series (f : ℂ → E) (c : ℂ) (R : ℝ) :
+  formal_multilinear_series ℂ ℂ E :=
+λ n, continuous_multilinear_map.mk_pi_field ℂ _ $
+  (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - c)⁻¹ ^ n • (z - c)⁻¹ • f z
+
+lemma has_fpower_series_on_ball_of_differentiable_off_countable {R : ℝ≥0} {c : ℂ} {f : ℂ → E}
+  {s : set ℂ} (hs : countable s) (hc : continuous_on f (closed_ball c R))
+  (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) (hR : 0 < R) :
+  has_fpower_series_on_ball f (cauchy_power_series f c R) c R :=
+\end{lstlisting}
+
+TODO: removable singularity, max modulus
+
+\section{Future plans}\label{sec:future-plans}
+
+\subsection{Other integrals}\label{sec:other-integrals}
+
+One possible direction of improvement would be to formalize the
+divergence theorem for (some of the) other integrals listed in the
+survey~\cite{TODO}. Some of these theorems allow the function to be
+continuous, not differentiable, on a countable set of
+\emph{hyperplanes}. These theorems can be transfered to more general
+versions of the Cauchy-Goursat theorems.
+
+The main obstacle for this project is that I define \enquote{box}
+integrals in a non-extensible way, see \autoref{sec:filters}. So, to
+add more integrals (or to replace the GP-integral with a better one),
+one has to seriously refactor the definition.
+
+\subsection{Complex analysis in higher dimension}%
+\label{sec:compl-analys-high}
+
+Most of the proofs discussed in \autoref{sec:appl-compl-analys} can be
+easily generalized to the case of a function
+\(f\colon \bbC^{n}\to E\). I mentor an undergraduate student who tries
+to do that as a part of a course. The generalization will be done by
+summer, either by the student or by myself.
+
+TODO say that HOL-Light has a library about multivariable complex analysis.
+
+\subsection{The Cauchy-Goursat theorem for any domain}\label{sec:cauchy-goursat-any}
+
+My goal was to show that it is possible to deduce the Cauchy-Goursat
+theorem from the divergence theorem, so I formalized the
+Cauchy-Goursat theorem only for a few special cases (a rectangle, an
+annulus, and a disk). One can deduce the general Cauchy-Goursat
+theorem from the version for a rectangle but it requires quite a few
+topological lemmas that are not in \texttt{mathlib} yet.
+
+\subsection{One-dimensional complex analysis}%
+\label{sec:one-dimens-compl}
+
+Formalization of the Cauchy-Goursat theorem makes it possible to
+formalize many theorems from the one-dimensional complex analysis. I
+already formalized the removable singularity theorem and the maximum
+modulus principle but clearly this is just the beginning.
+
+My main goal for the next year or two is to formalize Ilyashenko's
+proof of the fact that a polynomial vector field on \(\bbR^{2}\) has
+only finitely many limit cycles (i.e., isolated periodic solutions),
+at least in the case of hyperbolic singular points. The proof of this
+theorem heavily relies on the complex analysis.
+
+\end{document}
