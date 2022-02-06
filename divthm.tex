@@ -72,6 +72,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
+\sloppy
 \maketitle
 
 \begin{abstract}
@@ -142,19 +143,63 @@ formalize in this project.
 \end{itemize}
 
 Most of these theorems were formalized earlier in other theorem
-provers (e.g., the Green's formula was formalized in
-Isabelle~\cite{TODO} and large chunks of complex analysis were
-formalized in Isabelle~\cite{TODO} and HOL-Light~\cite{TODO}).
-However, as far as I know, this is the first project where the
-Cauchy-Goursat theorem is formalized as a corollary of the divergence
-theorem. Also, the assumptions in the Cauchy-Goursat theorem are
-slightly weaker than in most textbooks.
+provers. However, this is the first project where the divergence
+theorem was formalized in this generality. In particular, the
+Cauchy-Goursat theorem becomes a simple corollary of the general
+divergence theorem. Also, the assumptions in the Cauchy-Goursat
+theorem are slightly weaker than in most textbooks.
 
-\section{Structure of the paper}%
+The most similar other project is the formalization of the Green's
+theorem for any elementary region in Isabelle. Neither of these two
+theorems implies the other. Here are the key points where one of the
+formalizations is more general than the other, see also
+\autoref{sec:gener-diverg-theor}.
+
+\begin{description}
+\item[shape of the domain] Isabelle formalization works with any
+  elementary region while my formalization only works for a
+  rectangular box;
+\item[differentiability] Isabelle formalization only requires
+  existence of the partial derivatives while I require Fréchet
+  differentiability of the original function;
+\item[regularity of the derivative] Isabelle formalization requires
+  integrability of each partial derivatiev while my formalization
+  makes no regularity assumptions for the GP-integral and assumes only
+  integrability of the divergence for the Henstock-Kurzweil and
+  Bochner integrals;
+\item[dimension] Isabelle formalization only deals with dimension two
+  while I formalize the divergence theorem in any dimension;
+\item[codomain] Isabelle formalization only works for finite
+  dimensional codomain while my formalization works for any Banach
+  space.
+\end{description}
+
+The complex analysis part of the project is behind the state of the
+art complex analysis library, and is provided mostly as a proof of
+concept (and the begining of a new project).
+
+All these theorems, except for the maximum modulus principle, are
+already in the \texttt{master} branch of the Lean mathematical library
+\texttt{mathlib}~\cite{mathlib}. I expect the maximum modulus
+principle to be merged in about a week. For presentational purposes, I
+changed some names (the \texttt{mathlib} naming convention sometimes
+leads to very long names) and notation in the code listings below.
+
+\subsection{Structure of the paper}%
 \label{sec:structure-paper}
 
 In \autoref{sec:gener-diverg-theor} I informally discuss different
-ways to formalize the Green's theorem mentioned above. TODO
+ways to generalize the divergence theorem mentioned above, including
+comparison with the formalization in Isabelle. Then in
+\autoref{sec:henst-kurzw-informal} I recall various definitions
+related to the Henstock-Kurzweil, McShane, and GP integrals and
+formulate the divergence theorem for the GP integral. In
+\autoref{sec:GP-impl} I discuss some design choice I made in this
+project, both good and bad ones. Finally, in
+\autoref{sec:appl-compl-analys} I explain how to apply this theorem to
+prove the Cauchy-Goursat theorem and some other basic theorems from
+complex analysis and \autoref{sec:future-plans} is devoted to my
+future plans.
 
 \section{Generalizations of the divergence theorem}%
 \label{sec:gener-diverg-theor}
@@ -163,7 +208,7 @@ The divergence theorem for \(C^{1}\) vector fields on rectangular
 boxes can be generalized in a few different directions, leading to
 several theorems none of which implies the others.
 
-\paragraph*{Shape of the domain}
+\subsection{Shape of the domain}
 One natural direction of generalization is to deal with
 non-rectangular domains. Usually, Green's formula is stated for a
 union of elementary regions. This generalization is done (in dimension
@@ -173,7 +218,7 @@ discuss this in any more details.
 
 % https://www.cl.cam.ac.uk/~lp15/papers/Formath/Greens-theorem.pdf
 
-\paragraph*{More general codomain}
+\subsection{More general codomain}
 Another possible direction of generalization is to deal with functions
 \(f\colon \bbR^{n}\to E^{n}\), where \(E\) is a real Banach space,
 instead of vector fields \(v\colon \bbR^{n}\to\bbR^{n}\).  Most proofs
@@ -181,7 +226,7 @@ that work for a vector field can be generalized to this case with no
 or little modifications. I deal with functions \(\bbR^{n}\to E^{n}\)
 right away.
 
-\paragraph*{Integrable partial derivatives}
+\subsection{Integrable partial derivatives}
 It is easy to see that the standard proof based on Fubini theorem and
 FTC works for a function \(f\colon \bbR^{n}\to E^{n}\) such that the
 partial derivatives \(\frac{\partial f_{i}(x)}{\partial x_{i}}\) exist
@@ -192,7 +237,7 @@ formalized the other one because it implies Cauchy--Goursat theorem.
 
 TODO: formalize this one if I have a spare evening before the deadline.
 
-\paragraph*{Fréchet differentiability}
+\subsection{Fréchet differentiability}
 Recall that a function \(f\colon E_{1}\to E_{2}\) between normed
 vector spaces is called \emph{Fréchet differentiable} at a point \(x\)
 with derivative given by a continuous linear map
@@ -231,7 +276,7 @@ regularity from the derivatives (no requirements for the GP-integral
 and integrability of the divergence instead of integrability of
 partial derivatives for most other integrals).
 
-\paragraph*{Weaker assumptions on a subset of the box}
+\subsection{Weaker assumptions on a subset of the box}
 
 One can push arguments in the proofs discussed above to weaken the
 regularity assumptions on a “small” subset of the box.
@@ -397,27 +442,33 @@ Bochner integral.
 
 \section{Divergence theorem: design choices and implementation details}%
 \label{sec:GP-impl}
-The following notation is heavily used in the code below and is
-specific to \texttt{mathlib} and/or this project.
+The code below uses some notation that is specific either to
+\texttt{mathlib} or this project, see \autoref{tab:notation}.
 
-\noindent%
-\begin{tabular}{rp{12cm}}
-  \lstinline=Icc a b=& the closed interval \([a, b]\);\\
-  \lstinline=Ioo a b= & the open interval \((a, b)\);\\
-  \lstinline=Ioc a b= & the open-closed interval \((a, b]\);\\
-  \lstinline=ICC a b=& the unordered closed interval \([\min(a, b), \max(a, b)]\);\\
-  \lstinline=IOO a b=& the unordered open interval \((\min(a, b), \max(a, b))\);\\
-  \lstinline=ℝⁿ=& the vector space \(\bbR^{n}\), implemented as \lstinline=fin n → ℝ=,
-                  where \lstinline+fin n+ is the canonical type with \(n\) elements\\
-  \lstinline=ℝ>0, ℝ≥0= & the types of positive and nonnegative real numbers, respectively;\\
-  \lstinline=I= & the imaginary unit;\\
-  \lstinline=s ×ℂ t= & the product of sets on the real and imaginary axes in \(\bbC\).
-\end{tabular}
+\begin{table}[h]
+  \centering
+  \begin{tabular}{rp{12cm}}
+    \lstinline=Icc a b=& the closed interval \([a, b]\);\\
+    \lstinline=Ioo a b= & the open interval \((a, b)\);\\
+    \lstinline=Ioc a b= & the open-closed interval \((a, b]\);\\
+    \lstinline=ICC a b=& the unordered closed interval \([\min(a, b), \max(a, b)]\);\\
+    \lstinline=IOO a b=& the unordered open interval \((\min(a, b), \max(a, b))\);\\
+    \lstinline=ℝⁿ=& the vector space \(\bbR^{n}\), implemented as \lstinline=fin n → ℝ=,
+    where \lstinline+fin n+ is the canonical type with \(n\) elements\\
+    \lstinline=ℝ>0, ℝ≥0= & the types of positive and nonnegative real numbers, respectively;\\
+    \lstinline=e i= & \(i\)-th basis vector in \(\bbR^{n}\);\\
+    \lstinline=I= & the imaginary unit;\\
+    \lstinline=s ×ℂ t= & the product of sets on the real and imaginary axes in \(\bbC\).
+  \end{tabular}
+  \caption{Project-specific notation}\label{tab:notation}
+\end{table}
 
 \subsection{Boxes}\label{sec:boxes}
 
-A nonempty open-closed box in \(\bbR^{n}\) is defined as the following
-structure.
+I use open-closed boxes in \(\bbR^{n}\) as elements of partition
+because this way the boxes are disjoint as sets and cover the whole
+ambient box, so one does not have to deal with interiors or closures
+to define a partition.
 
 \begin{lstlisting}[caption=Definition of a box]
 structure box (n : ℕ) :=
@@ -425,13 +476,14 @@ structure box (n : ℕ) :=
 (lower_lt_upper : ∀ i, lower i < upper i)
 \end{lstlisting}
 
-The membership of a vector \lstinline{x : ℝⁿ} in a box is defined by
-
-\begin{lstlisting}
+\begin{lstlisting}[caption=The set defined by a box]
 instance : has_mem (ℝⁿ) (box n) :=
 ⟨λ x I, ∀ i, x i ∈ Ioc (I.lower i) (I.upper i)⟩
+
+instance : has_coe_t (box n) (set ℝⁿ) := ⟨λ I, {x | x ∈ I}⟩
 \end{lstlisting}
-and the order is the inclusion order on the corresponding sets.
+The order on the boxes is the inclusion order on the corresponding
+sets.
 
 I chose to explicitly deny empty boxes because this way the
 \lstinline{lower} and \lstinline{upper} vertices are uniquely defined
@@ -479,7 +531,7 @@ structure prepartition (I : box n) :=
 and a predicate saying that a prepartition is actually a partition
 
 \begin{lstlisting}[caption={A prepartition is a partition if it covers the whole box}]
-def prepartition.is_partition (π : prepartition I) : Prop :=
+def is_partition (π : prepartition I) : Prop :=
 ∀ x ∈ I, ∃ J ∈ π, x ∈ J
 \end{lstlisting}
 
@@ -510,10 +562,11 @@ in the previous paragraph with an additional assertion that all boxes
 of the partition are homothetic to the original box.
 
 \begin{lstlisting}[caption={Cousin's lemma, version 1}]
-lemma box.exists_tagged_partition_is_Henstock_is_subordinate_homothetic
-  (I : box n) (r : ℝⁿ → ℝ>0) :
-  ∃ π : tagged_prepartition I, π.is_partition ∧ π.is_Henstock ∧ π.is_subordinate r ∧
-    (∀ J ∈ π, ∃ m : ℕ, ∀ i, (J : _).upper i - J.lower i = (I.upper i - I.lower i) / 2 ^ m) ∧
+lemma exists_subordinate_Henstock (I : box n) (r : ℝⁿ → ℝ>0) :
+  ∃ π : tagged_prepartition I, π.is_partition ∧ π.is_Henstock ∧
+    π.is_subordinate r ∧
+    (∀ J ∈ π, ∃ m : ℕ, ∀ i, (J : _).upper i - J.lower i =
+      (I.upper i - I.lower i) / 2 ^ m) ∧
     π.distortion = I.distortion
 \end{lstlisting}
 
@@ -524,8 +577,7 @@ function, covers the same part of the original box, and has the same
 distortion.
 
 \begin{lstlisting}[caption={Cousin's lemma, version 2}]
-lemma prepartition.exists_tagged_le_is_Henstock_is_subordinate_Union_eq
-  (r : ℝⁿ → ℝ>0) (π : prepartition I) :
+lemma exists_le_Henstock_Union_eq (r : ℝⁿ → ℝ>0) (π : prepartition I) :
   ∃ π' : tagged_prepartition I, π'.to_prepartition ≤ π ∧
     π'.is_Henstock ∧ π'.is_subordinate r ∧ π'.distortion = π.distortion ∧
     π'.Union = π.Union :=
@@ -622,13 +674,14 @@ nontrivial. The actual definition uses more intermediate filters but
 the result is equal (though not definitionally equal) to the code in
 the listing below.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption=Filters defined by a set of integration parameters and a box]
 def to_filter (l : integration_params) (I : box n) :
   filter (tagged_prepartition I) :=
 ⨆ c : ℝ≥0, ⨅ (r : ℝⁿ → ℝ>0) (hr : l.r_cond r),
   𝓟 {π | l.mem_base_set I c r π}
 
-def to_filter_Union (l : integration_params) (I : box n) (π₀ : prepartition I) :=
+def to_filter_Union (l : integration_params) (I : box n)
+  (π₀ : prepartition I) :=
 l.to_filter I ⊓ 𝓟 {π | π.Union = π₀.Union}
 \end{lstlisting}
 
@@ -653,15 +706,19 @@ integrals. However, I never used it for functions other than the
 volumes defined by measures, so possibly this generalization is a case
 of overengineering.
 
-\begin{lstlisting}[caption={Definition of the box integral}]
-def has_integral (I : box ι) (l : integration_params) (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F))
-  (y : F) : Prop :=
+\begin{lstlisting}[caption={A predicate saying that $f$ has integral $y$ on $I$}]
+def has_integral (I : box n) (l : integration_params) (f : ℝⁿ → E)
+  (vol : n →ᵇᵃ (E →L[ℝ] F)) (y : F) : Prop :=
 tendsto (integral_sum f vol) (l.to_filter_Union I ⊤) (𝓝 y)
-
-def integrable (I : box ι) (l : integration_params) (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F)) :=
+\end{lstlisting}
+\begin{lstlisting}[caption={A function is integrable if it has integral $y$ for some $y$}]
+def integrable (I : box n) (l : integration_params) (f : ℝⁿ → E)
+  (vol : n →ᵇᵃ (E →L[ℝ] F)) :=
 ∃ y, has_integral I l f vol y
-
-def integral (I : box ι) (l : integration_params) (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F)) :=
+\end{lstlisting}
+\begin{lstlisting}[caption={The integral of a function is a vector $y$ such that $f$ has integral $y$ if $f$ is integrable or zero otherwise}]
+def integral (I : box n) (l : integration_params) (f : ℝⁿ → E)
+  (vol : n →ᵇᵃ (E →L[ℝ] F)) :=
 if h : integrable I l f vol then h.some else 0
 \end{lstlisting}
 
@@ -684,24 +741,20 @@ lemma has_integral_GP_pderiv (f : ℝⁿ⁺¹ → E) (f' : ℝⁿ⁺¹ → ℝ�
   (Hs : ∀ x ∈ s, continuous_within_at f I.Icc x)
   (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
   (i : fin (n + 1)) :
-  has_integral I GP (λ x, f' x (pi.single i 1)) dV
+  has_integral I GP (λ x, f' x (e i)) dV
     (integral (I.face i) GP (f ∘ I.front_face i) dV -
       integral (I.face i) GP (f ∘ I.back_face i) dV)
 \end{lstlisting}
-Here \lstinline=pi.single i 1= is the \(i\)-th basis vector in
-\(\bbR^{n+1}\). The actual statement also uses a longer name instead
-of \(dV\).
 
 The sum of these statements for all terms of the divergence gives us
 the divergence theorem.
 
 \begin{lstlisting}[caption={The divergence theorem for the GP-integral},label=lst:divergence-GP]
-lemma has_integral_GP_divergence_of_forall_has_deriv_within_at
-  (f : ℝⁿ⁺¹ → Eⁿ⁺¹) (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹)
-  (s : set ℝⁿ⁺¹) (hs : countable s)
+lemma has_integral_GP_divergence (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
+  (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹) (s : set ℝⁿ⁺¹) (hs : countable s)
   (Hs : ∀ x ∈ s, continuous_within_at f I.Icc x)
   (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x) :
-  has_integral I GP (λ x, ∑ i, f' x (pi.single i 1) i) dV
+  has_integral I GP (λ x, ∑ i, f' x (e i) i) dV
     (∑ i, (integral (I.face i) GP (f ∘ I.front_face i) dV -
       integral (I.face i) GP (f ∘ I.back_face i) dV))
 \end{lstlisting}
@@ -737,12 +790,11 @@ integral with \lstinline~bRiemann = ff~. In other words, a Bochner
 integrable function is integrable in the sense of the McShane,
 Henstock-Kurzweil, and GP-integrals.
 
-\begin{lstlisting}
-lemma integrable_on.has_box_integral [second_countable_topology E] [measurable_space E]
-  [borel_space E] [complete_space E] {f : (ι → ℝ) → E} {μ : measure (ι → ℝ)}
-  [is_locally_finite_measure μ] {I : box ι} (hf : integrable_on f I μ) (l : integration_params)
-  (hl : l.bRiemann = ff) :
-  has_integral I l f μ.to_box_additive.to_smul (∫ x in I, f x ∂ μ)
+\begin{lstlisting}{caption=Bochner integrability implies box integrability}
+lemma integrable_on.has_box_integral {f : ℝⁿ → E} {μ : measure ℝⁿ}
+  [is_locally_finite_measure μ] {I : box n} (hf : integrable_on f I μ)
+  (l : integration_params) (hl : l.bRiemann = ff) :
+  has_integral I l f μ.to_box_additive.to_smul (∫ x in I, f x ∂μ)
 \end{lstlisting}
 
 The proof follows~\cite{TODO}, with some modifications required to
@@ -756,9 +808,10 @@ Since any Bochner integrable function is GP-integrable, we immediately
 obtain the following result for the Bochner integral.
 
 \begin{lstlisting}
-lemma aux (I : box (fin (n + 1))) (f : ℝⁿ⁺¹ → Eⁿ⁺¹) (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹)
-  (s : set ℝⁿ⁺¹) (hs : countable s)
-  (Hc : continuous_on f I.Icc) (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
+lemma aux (I : box (fin (n + 1))) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
+  (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹) (s : set ℝⁿ⁺¹) (hs : countable s)
+  (Hc : continuous_on f I.Icc)
+  (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
   (Hi : integrable_on (λ x, ∑ i, f' x (e i) i) I.Icc) :
   ∫ x in I.Icc, ∑ i, f' x (e i) i =
     ∑ i : fin (n + 1),
@@ -772,19 +825,8 @@ result to an increasing sequence of subboxes that cover the interior
 of \(I\). Second, I allow \(a_{i}=b_{i}\); in this case both sides are
 equal to zero.
 
-In the following statement, I heavily use local notation to make it
-more readable.
 \begin{lstlisting}[caption={The divergence theorem for the Bochner integral},label=lst:divergence-bochner]
-local notation `ℝⁿ⁺¹` := fin (n + 1) → ℝ
-local notation `Eⁿ⁺¹` := fin (n + 1) → E
-local notation `e` i := pi.single i 1
-
-local notation `face` i := set.Icc (a ∘ fin.succ_above i) (b ∘ fin.succ_above i)
-local notation `front_face` i:2000 := fin.insert_nth i (b i)
-local notation `back_face` i:2000 := fin.insert_nth i (a i)
-
-lemma integral_divergence_of_has_fderiv_within_at_off_countable
-  {n : ℕ} (a b : ℝⁿ⁺¹) (hle : a ≤ b) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
+lemma integral_divergence {n : ℕ} (a b : ℝⁿ⁺¹) (hle : a ≤ b) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
   (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹) (s : set ℝⁿ⁺¹) (hs : countable s)
   (Hc : continuous_on f (Icc a b))
   (Hd : ∀ x ∈ pi univ (λ i, Ioo (a i) (b i)) \ s, has_fderiv_at f (f' x) x)
@@ -820,8 +862,8 @@ right hand side is equal to the integral
 \(\int_{\partial R}f(z)\,dz\).
 
 \begin{lstlisting}[caption={Cauchy-Goursat theorem for a rectangle},label=lst:cauchy-rect]
-lemma integral_boundary_rect_eq_zero_of_differentiable_on_off_countable
-  (f : ℂ → E) (z w : ℂ) (s : set ℂ) (hs : countable s)
+lemma cauchy_theorem_rect (f : ℂ → E) (z w : ℂ)
+  (s : set ℂ) (hs : countable s)
   (Hc : continuous_on f (ICC z.re w.re ×ℂ Icc z.im w.im))
   (Hd : ∀ x ∈ (IOO z.re w.re ×ℂ IOO z.im w.im) \ s,
     differentiable_at ℂ f x) :
@@ -832,14 +874,14 @@ lemma integral_boundary_rect_eq_zero_of_differentiable_on_off_countable
 \end{lstlisting}
 
 To formulate the Cauchy-Goursat theorem for an annulus and a circle, I
-define \(\oint_{|z-c|=R}f(z)\,dz\) as
+define the circle integral \(\oint_{|z-c|=R}f(z)\,dz\) as
 \(\int_{0}^{2\pi}(c+Re^{\theta i})'f(c+Re^{\theta i})\,d\theta\).
 
 \begin{lstlisting}[caption=Definition of the circle integral \(\oint_{|z-c|=R}f(z)\,dz\)]
 def circle_map (c : ℂ) (R : ℝ) : ℝ → ℂ := λ θ, c + R * exp (θ * I)
 
 def circle_integral (f : ℂ → E) (c : ℂ) (R : ℝ) : E :=
-∫ (θ : ℝ) in 0..2 * π, deriv (circle_map c R) θ • f (circle_map c R θ)
+∫ θ in 0..2 * π, deriv (circle_map c R) θ • f (circle_map c R θ)
 \end{lstlisting}
 
 Applying the Cauchy-Goursat theorem for a rectangle to the function
@@ -848,31 +890,36 @@ Applying the Cauchy-Goursat theorem for a rectangle to the function
 function differentiable on an annulus.
 
 \begin{lstlisting}[caption=Cauchy-Goursat theorem for an annulus,label=lst:cauchy-annulus]
-lemma circle_integral_eq_of_differentiable_on_annulus_off_countable
-  {c : ℂ} {r R : ℝ} (h0 : 0 < r) (hle : r ≤ R) {f : ℂ → E} {s : set ℂ} (hs : countable s)
+lemma cauchy_thm_annulus {c : ℂ} {r R : ℝ} (h0 : 0 < r)
+  (hle : r ≤ R) {f : ℂ → E} {s : set ℂ} (hs : countable s)
   (hc : continuous_on f (closed_ball c R \ ball c r))
   (hd : ∀ z ∈ ball c R \ closed_ball c r \ s, differentiable_at ℂ f z) :
   ∮ z in C(c, R), f z = ∮ z in C(c, r), f z
 \end{lstlisting}
 
-Applying this theorem to \(\frac{f(z)}{z-c}\) and taking the limit as
-\(r\) tends to \(0\) from the right, I prove the Cauchy integral
-formula for the value of a complex differentiable function at the
-center of a disk.
+Next, I apply this theorem to the function \(\frac{f(z)}{z-c}\)
+(formally, \((z-c)^{-1}\cdot f(z)\) because \(f\) is a vector-valued
+function) and take the limit as \(r\) tends to \(0\) from the
+right. Thus I prove the Cauchy integral formula for the value of a
+complex differentiable function at the center of a disk. This theorem
+will be later generalized to any point of the disk but I will use this
+case to prove the general version.
 
 \begin{lstlisting}[caption=Cauchy integral formula for the center of a disk,label=lst:cauchy-int-center]
-lemma circle_integral_sub_center_inv_smul_of_differentiable_on_off_countable {R : ℝ} (h0 : 0 < R)
+lemma cauchy_integral_disk_center {R : ℝ} (h0 : 0 < R)
   {f : ℂ → E} {c : ℂ} {s : set ℂ} (hs : countable s)
-  (hc : continuous_on f (closed_ball c R)) (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) :
+  (hc : continuous_on f (closed_ball c R))
+  (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) :
   ∮ z in C(c, R), (z - c)⁻¹ • f z = (2 * π * I : ℂ) • f c :=
 \end{lstlisting}
 
-Applying this lemma to the function \((z-c)f(z)\), we prove the
+Applying this lemma to the function \((z-c)\cdot f(z)\), we prove the
 Cauchy-Goursat theorem for a disk.
 
 \begin{lstlisting}[caption=Cauchy-Goursat theorem for a disk,label=lst:cauchy-circle]
-lemma circle_integral_eq_zero_of_differentiable_on_off_countable {R : ℝ} (h0 : 0 ≤ R) {f : ℂ → E}
-  {c : ℂ} {s : set ℂ} (hs : countable s) (hc : continuous_on f (closed_ball c R))
+lemma cauchy_thm_disk {R : ℝ} (h0 : 0 ≤ R) {f : ℂ → E}
+  {c : ℂ} {s : set ℂ} (hs : countable s)
+  (hc : continuous_on f (closed_ball c R))
   (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) :
   ∮ z in C(c, R), f z = 0 :=
 \end{lstlisting}
@@ -901,24 +948,28 @@ be differentiable, then the same formula from the previous case by
 continuity.
 
 \begin{lstlisting}[caption=Cauchy integral formula for a circle,label=lst:cauchy-int]
-lemma two_pi_I_inv_smul_circle_integral_sub_inv_smul_of_differentiable_on_off_countable
-  {R : ℝ} {c w : ℂ} {f : ℂ → E} {s : set ℂ} (hs : countable s) (hw : w ∈ ball c R)
-  (hc : continuous_on f (closed_ball c R)) (hd : ∀ x ∈ ball c R \ s, differentiable_at ℂ f x) :
+lemma cauchy_integral_disk {R : ℝ} {c w : ℂ} {f : ℂ → E} {s : set ℂ}
+  (hs : countable s) (hw : w ∈ ball c R)
+  (hc : continuous_on f (closed_ball c R))
+  (hd : ∀ x ∈ ball c R \ s, differentiable_at ℂ f x) :
   (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - w)⁻¹ • f z = f w :=
 \end{lstlisting}
 
 The Cauchy integral formula immediately implies that a function
 \(f\colon\bbC\to E\) that is complex differentiable on an open disk
-and is continuous on the corresponding closed disk is analytic on the
-open disk.
+and is continuous on the corresponding closed disk must be analytic on
+the interior of this disk. The coefficients of the Taylor series are
+given by Cauchy integrals.
 
-\begin{lstlisting}[caption=Analyticity of a complex differentiable function,label=lst:diff-analytic]
+\begin{lstlisting}[caption=Power series for a function differentiable on a disk,label=lst:cauchy-series]
 def cauchy_power_series (f : ℂ → E) (c : ℂ) (R : ℝ) :
   formal_multilinear_series ℂ ℂ E :=
 λ n, continuous_multilinear_map.mk_pi_field ℂ _ $
-  (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - c)⁻¹ ^ n • (z - c)⁻¹ • f z
+  (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - c) ^ (-n - 1 : ℤ) • f z
+\end{lstlisting}
 
-lemma has_fpower_series_on_ball_of_differentiable_off_countable {R : ℝ≥0} {c : ℂ} {f : ℂ → E}
+\begin{lstlisting}[caption=Analyticity of a complex differentiable function,label=lst:diff-analytic]
+lemma analytic_of_differentiable {R : ℝ≥0} {c : ℂ} {f : ℂ → E}
   {s : set ℂ} (hs : countable s) (hc : continuous_on f (closed_ball c R))
   (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) (hR : 0 < R) :
   has_fpower_series_on_ball f (cauchy_power_series f c R) c R :=
