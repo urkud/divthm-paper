@@ -199,11 +199,11 @@ comparison with the formalization in Isabelle. Then in
 \autoref{sec:henst-kurzw-informal} I give various definitions related
 to the Henstock-Kurzweil, McShane, and GP integrals and formulate the
 divergence theorem for the GP integral. In \autoref{sec:GP-impl} I
-discuss some design choices I made in this project, both good and bad
-ones. Finally, in \autoref{sec:appl-compl-analys} I explain how to
-apply this theorem to prove the Cauchy-Goursat theorem and some other
-basic theorems from complex analysis. \autoref{sec:future-plans} is
-devoted to my future plans.
+discuss some design choices I made in this project. Finally, in
+\autoref{sec:appl-compl-analys} I explain how to apply this theorem to
+prove the Cauchy-Goursat theorem and some other basic theorems from
+complex analysis. \autoref{sec:future-plans} is devoted to my future
+plans.
 
 \section{Generalizations of the divergence theorem}%
 \label{sec:gener-diverg-theor}
@@ -262,7 +262,7 @@ following theorem.
 
   Then for each \(i=1,\dots,n\), the partial derivative
   \(\frac{\partial f}{\partial x_{i}}\) is GP-integrable on \(I\) and
-  its integral equal to the difference of the integrals of \(f\) over
+  its integral is equal to the difference of the integrals of \(f\) over
   the faces \(x_{i}=b_{i}\) and \(x_{i}=a_{i}\) of \(I\).
 
   In particular, for a function \(f\colon \bbR^{n}\to E^{n}\), the
@@ -318,7 +318,7 @@ integral.
   \(\eps\)-close to \(c\).
 \end{definition}
 
-Slight modifications of this definitions give the integrals of Riemann
+Slight modifications of this definition give the integrals of Riemann
 (we require \(\delta\) to be a constant) and McShane (we no longer
 require that tags belong to their intervals but still require
 \(\xi_{i}\in[a, b]\)).
@@ -392,7 +392,8 @@ such that the divergence of any Fréchet differentiable function is
 integrable, see Bongiorno's survey~\cite{BONGIORNO2002587}.  I use the
 one suggested by Mawhin~\cite{Mawhin81}.
 
-\begin{definition}
+\begin{definition}%
+  \label{def:GP-integral}
   The \emph{irregularity} (or \emph{distortion}) \(\Sigma(\pi)\) of a
   partition \(\pi=\set{J_{k}}\) is the maximum of rates of stretching
   \(\sigma(J_{k})\) of the boxes \(J_{k}\).
@@ -498,9 +499,10 @@ represented as the bottom element \lstinline{⊥ : with_bot (box n)},
 where \lstinline{with_bot α} is the type \lstinline={⊥} ∪ α=,
 implemented as a type synonym for \lstinline{option α} with custom order.
 
-The type \lstinline=with_bot (box n)= is a lattice, where the meet of
-two boxes is their intersection and the join of two boxes is the
-minimal box that includes both of them.
+From the order theory point of view, the type
+\lstinline=with_bot (box n)= is a lattice, where the meet of two boxes
+is their intersection and the join of two boxes is the minimal box
+that includes both of them.
 
 For an open-closed box \lstinline{I : box n}, \lstinline{I.Ioo} and
 \lstinline{I.Icc} are the corresponding open and closed boxes,
@@ -516,7 +518,7 @@ embedding leaving a \enquote{hole} at \(i\): it sends \(j<i\) to \(j\)
 and \(j\ge i\) to \(j+1\). I also define two embeddings
 \lstinline=I.front_face i, I.back_face i : ℝⁿ → ℝⁿ⁺¹= that insert
 \lstinline=I.upper i= and \lstinline=I.lower i=, respectively, as the
-\(i\)-th coordinate. These embeddings map \lstinline=I.face i= to two
+\(i\)-th coordinate. These embeddings map \lstinline=I.face i= to
 the faces \lstinline+x i = I.upper i+ and \lstinline+x i = I.lower i+
 of \(I\).
 
@@ -576,11 +578,14 @@ lemma exists_subordinate_Henstock (I : box n) (r : ℝⁿ → ℝ>0) :
     π.distortion = I.distortion
 \end{lstlisting}
 
-Then I use it to prove that for any prepartition there exists a
-refinement of this prepartition with the same distortion and a choice
-of Henstock tagged prepartition that is subordinate to a given gauge
-function, covers the same part of the original box, and has the same
-distortion.
+Then I use it to prove that for any prepartition \(\pi\) there exists
+a refinement of this prepartition with the same distortion, see
+\autoref{def:GP-integral}, and a choice of tags such that the
+resulting tagged prepartition is Henstock and is subordinate to a
+given gauge function. To prove this, I apply the previous lemma to
+each box of \(\pi\), then merge these partitions using
+\lstinline=prepartition.bUnion=. I use this version of Cousin's lemma
+to prove that the GP-integral is well defined.
 
 \begin{lstlisting}[caption={Cousin's lemma, version 2}]
 lemma exists_le_Henstock_Union_eq (r : ℝⁿ → ℝ>0) (π : prepartition I) :
@@ -609,7 +614,7 @@ The parameters have the following meaning:
 \begin{tabular}{rp{10cm}}
   \lstinline=bRiemann=&this is a Riemann integral, the gauge function must be a constant;\\
   \lstinline=bHenstock=&tags must belong to the closure of their boxes;\\
-  \lstinline=bDistortion=&this is a regular integral, the gauge function may depend on the distortion of a partition;
+  \lstinline=bDistortion=&the gauge function may depend on the distortion of a partition.
 \end{tabular}
 
 E.g., the following integration parameters are used to define the
@@ -669,8 +674,8 @@ We already saw the first three assumptions in the informal definition
 of the GP-integral. The last assumption is trivial if \(\pi\) is a
 partition (then we can choose \(\pi'\) to be the empty
 prepartition). One can show that it is also trivial whenever \(c>1\)
-but I decided to cut off a corner here and introduce this assumption
-instead adding an explicit assumption \(c>1\) here and there and of
+but I decided to cut a corner here and introduce this assumption
+instead of adding an explicit assumption \(c>1\) here and there and of
 proving one more lemma.
 
 The most important filter related to a set of integration parameters
@@ -816,7 +821,7 @@ the limit.
 
 The Henstock-Sacks inequality for the Henstock-Kurzweil integral says
 the following. Let \(f\) be a function integrable on a box \(I\); let
-\(r\colon \bbR^{n} → (0, \infty)\) be a function such that for any
+\(r\colon \bbR^{n} \to \bbR_{>0}\) be a function such that for any
 tagged partition of \(I\) subordinate to \(r\), the integral sum over
 this partition is \(\eps\)-close to the integral. Then for any tagged
 \emph{prepartition} \(\pi\), the integral sum over \(\pi\) differs
@@ -905,7 +910,7 @@ integral: given a positive number \(\eps\) and an upper estimate \(c\)
 on the distortion of the partition, for each point \(x\) of
 differentiability, one can choose \(\delta(x)>0\) such that the
 estimate \(f(y)=f(x)+f'(x)(y-x)+o(y-x)\) and \(\Sigma(\pi)\le c\)
-imply that the difference between the difference of the integrals of
+imply that the difference between the integrals of
 \(f\) over the \(i\)-th front and back faces of a \(\delta(x)\)-small
 box \(J\ni x\) is \(\eps V(J)\)-close to the term
 \(\frac{\partial f}{\partial x_{i}}V(J)\) of the Riemann sum for the
@@ -1081,7 +1086,7 @@ assumptions of the previous theorem, hence the integrals of
 equals \(2\pi i f(w)\).
 
 If \(w\) belongs to the countable set where \(f\) is not guaranteed to
-be differentiable, then the same formula from the previous case by
+be differentiable, then the same formula follows from the previous case by
 continuity.
 
 \begin{lstlisting}[caption=Cauchy integral formula for a circle,label=lst:cauchy-int]
