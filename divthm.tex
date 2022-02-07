@@ -111,11 +111,11 @@ we get
   integral theorem} (a.k.a. Cauchy-Goursat theorem) for a rectangle.
 
 There is a gap in the proof outlined above: I explained how to prove
-the Green's formula for a \emph{continuously differentiable} function
+Green's formula for a \emph{continuously differentiable} function
 but the Cauchy-Goursat theorem works for any \emph{complex
-  differentiable} function. A common misbelieve is that this makes
-Green's formula (and divergence theorem) unusable for Cauchy-Goursat
-theorem, and one has to prove it using an explicit infinite descend.
+  differentiable} function. A common misbelief is that this makes
+Green's formula (and divergence theorem) unusable for the Cauchy-Goursat
+theorem, and one has to prove it using an explicit infinite descent.
 
 The goal of this project is to formulate a version of the divergence
 theorem that implies the Cauchy-Goursat theorem without any
@@ -156,20 +156,20 @@ formalizations is more general than the other, see also
 \autoref{sec:gener-diverg-theor}.
 
 \begin{description}
-\item[shape of the domain] Isabelle formalization works with any
+\item[shape of the domain] The Isabelle formalization works with any
   elementary region while my formalization only works for a
   rectangular box;
-\item[differentiability] Isabelle formalization only requires
+\item[differentiability] The Isabelle formalization only requires
   existence of the partial derivatives while I require Fréchet
   differentiability of the original function;
-\item[regularity of the derivative] Isabelle formalization requires
-  integrability of each partial derivatiev while my formalization
+\item[regularity of the derivative] The Isabelle formalization requires
+  integrability of each partial derivative while my formalization
   makes no regularity assumptions for the GP-integral and assumes only
   integrability of the divergence for the Henstock-Kurzweil and
   Bochner integrals;
-\item[dimension] Isabelle formalization only deals with dimension two
+\item[dimension] The Isabelle formalization only deals with dimension two
   while I formalize the divergence theorem in any dimension;
-\item[codomain] Isabelle formalization only works for finite
+\item[codomain] The Isabelle formalization only works for finite
   dimensional codomain while my formalization works for any Banach
   space.
 \end{description}
@@ -194,11 +194,11 @@ comparison with the formalization in Isabelle. Then in
 \autoref{sec:henst-kurzw-informal} I recall various definitions
 related to the Henstock-Kurzweil, McShane, and GP integrals and
 formulate the divergence theorem for the GP integral. In
-\autoref{sec:GP-impl} I discuss some design choice I made in this
+\autoref{sec:GP-impl} I discuss some design choices I made in this
 project, both good and bad ones. Finally, in
 \autoref{sec:appl-compl-analys} I explain how to apply this theorem to
 prove the Cauchy-Goursat theorem and some other basic theorems from
-complex analysis and \autoref{sec:future-plans} is devoted to my
+complex analysis. \autoref{sec:future-plans} is devoted to my
 future plans.
 
 \section{Generalizations of the divergence theorem}%
@@ -206,7 +206,7 @@ future plans.
 
 The divergence theorem for \(C^{1}\) vector fields on rectangular
 boxes can be generalized in a few different directions, leading to
-several theorems none of which implies the others.
+several theorems, none of which implies the others.
 
 \subsection{Shape of the domain}
 One natural direction of generalization is to deal with
@@ -227,13 +227,13 @@ or little modifications. I deal with functions \(\bbR^{n}\to E^{n}\)
 right away.
 
 \subsection{Integrable partial derivatives}
-It is easy to see that the standard proof based on Fubini theorem and
+It is easy to see that the standard proof based on Fubini's theorem and
 FTC works for a function \(f\colon \bbR^{n}\to E^{n}\) such that the
 partial derivatives \(\frac{\partial f_{i}(x)}{\partial x_{i}}\) exist
 at all points of the box and are integrable on the whole box.
 
-Neither this generalization, nor the next one imply each other. I
-formalized the other one because it implies Cauchy--Goursat theorem.
+Neither this generalization nor the next one imply each other. I
+formalized the other one because it implies the Cauchy--Goursat theorem.
 
 TODO: formalize this one if I have a spare evening before the deadline.
 
@@ -242,11 +242,11 @@ Recall that a function \(f\colon E_{1}\to E_{2}\) between normed
 vector spaces is called \emph{Fréchet differentiable} at a point \(x\)
 with derivative given by a continuous linear map
 \(f'\colon E_{1}\to E_{2}\) if \(f(x+y)=f(x)+f'(y)+o(y)\) as
-\(y\to 0\). Clearly, a Fréchet differentiable function \(f\colon \)has all partial
+\(y\to 0\). Clearly, a Fréchet differentiable function \(f\) has all partial
 derivatives and they are equal to the values of \(f'\) on the basis
 vectors.
 
-In 1981, Mawhin~\cite{Mawhin81} introduced a generalization of
+In 1981, Mawhin~\cite{Mawhin81} introduced a generalization of the
 Henstock-Kurzweil integral he called \emph{GP-integral} (probably from
 \emph{generalized Perron}). This integral allows us to prove the
 following theorem.
@@ -380,11 +380,11 @@ function \(f\colon \bbR^{n}\to E\) over a box \(I\).
 \end{definition}
 
 Divergences of some vector fields are not integrable in the sense of
-this definition (and any other generalization of Henstock-Kurzweil
-integral that satisfies Fubini theorem, see~\cite{Pfeffer93}), so we
+this definition (and any other generalization of the Henstock-Kurzweil
+integral that satisfies Fubini's theorem, see~\cite{Pfeffer93}), so we
 need another generalization to prove the divergence theorem.
 
-There are several generalizations of the Henstock-Kurzweil such that
+There are several generalizations of the Henstock-Kurzweil integral such that
 the divergence of any Fréchet differentiable function is integrable.
 We use the one suggested by Mawhin~\cite{Mawhin81}.
 
@@ -411,7 +411,7 @@ differentiable on a closed rectangle.
 
 \subsection{Application to the Bochner integral}
 
-Mathlib project uses the Bochner integral as its main
+The mathlib project uses the Bochner integral as its main
 integral. A~Bochner integrable function is McShane integrable (hence,
 Henstock-Kurzweil and GP integrable), thus \autoref{thm:divergence}
 holds for the Bochner integral if we assume that the divergence is
@@ -426,7 +426,7 @@ Bochner integral.
   \label{thm:divergence-Bochner}
   Let \(E\) be a real Banach space with second countable
   topology\footnote{This is a technical assumption required because of
-    the way Bochner integral is defined in mathlib.}. Let
+    the way the Bochner integral is defined in mathlib.}. Let
   \(I=(a,b]\subset\bbR^{n}\) be an open-closed box.
 
   Let \(s \subset\bbR^{n}\) be a countable set. Let
@@ -488,7 +488,7 @@ sets.
 I chose to explicitly deny empty boxes because this way the
 \lstinline{lower} and \lstinline{upper} vertices are uniquely defined
 by the set of points that belong to the box. The empty box is
-represented as the bottom element of \lstinline{⊥ : with_bot (box n)},
+represented as the bottom element \lstinline{⊥ : with_bot (box n)},
 where \lstinline{with_bot α} is the type \lstinline={⊥} ∪ α=,
 implemented as a type synonym for \lstinline{option α} with custom order.
 
