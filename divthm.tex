@@ -81,7 +81,7 @@
   rectangular box that does not assume regularity of individual
   partial derivatives, only Fréchet differentiability of the vector
   field and integrability of its divergence. Then I use this theorem
-  to prove Cauchy-Goursat theorem (for some simple domains) and
+  to prove the Cauchy-Goursat theorem (for some simple domains) and
   bootstrap complex analysis in the Lean mathematical library. The
   main tool is the GP-integral, a version of the Henstock-Kurzweil
   integral introduced by J. Mawhin in 1981. The divergence theorem for
@@ -101,15 +101,16 @@ a rectangular region on the plane, this can be written as
 \end{equation}
 where \(f, g\colon \bbR^{2}\to E\) are functions from the plane to
 some Banach space. This statement is also known as Green's theorem.
-For \(C^{1}\) smooth functions \(f\), \(g\), the equality immediately
-follows the Fundamental Theorem of Calculus and the Fubini Theorem.
+For continuously differentiable functions \(f\), \(g\), the equality
+immediately follows from the Fundamental Theorem of Calculus and the
+Fubini Theorem.
 
 If \(F\colon \bbC\to E\) is a complex differentiable function, then due
 to Cauchy-Riemann relations, the left hand side of Green's theorem
 applied to \(f(x, y)=F(x+iy)\) and \(g(x, y)=iF(x+iy)\) is zero, and
 we get
 \href{https://en.wikipedia.org/wiki/Cauchy's_integral_theorem}{Cauchy's
-  integral theorem} (a.k.a. Cauchy-Goursat theorem) for a rectangle.
+  integral theorem} (a.k.a. the Cauchy-Goursat theorem) for a rectangle.
 
 There is a gap in the proof outlined above: I explained how to prove
 Green's formula for a \emph{continuously differentiable} function
@@ -122,8 +123,9 @@ The goal of this project is to formulate a version of the divergence
 theorem that implies the Cauchy-Goursat theorem without any
 assumptions on the derivative of a complex differentiable function. It
 was originally inspired by a version of the divergence theorem
-in~\cite{TODO} that works for a vector field with \emph{continuous
-  divergence}, though the actual proof I formalized is very different.
+in~\cite{Acker1996} that works for a vector field with
+\emph{continuous divergence}, though the actual proof I formalized is
+very different.
 
 Here is the list of most important definitions and theorems I
 formalize in this project.
@@ -140,7 +142,7 @@ formalize in this project.
 \item the Cauchy integral formula for a disk, see \cref{lst:cauchy-int};
 \item analyticity of a complex differentiable function, see
   \cref{lst:diff-analytic};
-\item the maximum modulus principle.
+\item the Riemann removable singularity theorem.
 \end{itemize}
 
 Most of these theorems were formalized earlier in other theorem
@@ -151,10 +153,11 @@ divergence theorem. Also, the assumptions in the Cauchy-Goursat
 theorem are slightly weaker than in most textbooks.
 
 The most similar other project is Abdulaziz and Paulson's
-formalization of the Green's theorem for any elementary region in
-Isabelle~\cite{TODO}. Neither of these two theorems implies the
-other. Here are the key points where one of the formalizations is more
-general than the other, see also \autoref{sec:gener-diverg-theor}.
+formalization of the Green's theorem for a large class of domains in
+\(\bbR^{2}\) in Isabelle~\cite{Abdulaziz_Paulson}. Neither of these
+two theorems implies the other. Here are the key points where one of
+the formalizations is more general than the other, see also
+\autoref{sec:gener-diverg-theor}.
 
 \begin{description}
 \item[shape of the domain] The Isabelle formalization works with any
@@ -175,14 +178,15 @@ general than the other, see also \autoref{sec:gener-diverg-theor}.
   space.
 \end{description}
 
-The complex analysis part of the project is behind the state of the
-art complex analysis library, and is provided mostly as a proof of
-concept (and the begining of a new project).
+The complex analysis part of the project does not try to compete with
+the state of the art complex analysis
+libraries~\cite{harrison-mizar,harrison-hol}, and is
+provided mostly as a proof of concept (and the begining of a new
+project).
 
-All these theorems, except for the maximum modulus principle, are
-already in the \texttt{master} branch of the Lean mathematical library
-\texttt{mathlib}~\cite{mathlib}. I expect the maximum modulus
-principle to be merged in about a week. For presentational purposes, I
+All these theorems are already in the \texttt{master} branch of the
+Lean~\cite{10.1007/978-3-319-21401-6_26} mathematical library
+\texttt{mathlib}~\cite{mathlib20}. For presentational purposes, I
 changed some names (the \texttt{mathlib} naming convention sometimes
 leads to very long names) and notation in the code listings below.
 
@@ -192,30 +196,30 @@ leads to very long names) and notation in the code listings below.
 In \autoref{sec:gener-diverg-theor} I informally discuss different
 ways to generalize the divergence theorem mentioned above, including
 comparison with the formalization in Isabelle. Then in
-\autoref{sec:henst-kurzw-informal} I recall various definitions
-related to the Henstock-Kurzweil, McShane, and GP integrals and
-formulate the divergence theorem for the GP integral. In
-\autoref{sec:GP-impl} I discuss some design choices I made in this
-project, both good and bad ones. Finally, in
-\autoref{sec:appl-compl-analys} I explain how to apply this theorem to
-prove the Cauchy-Goursat theorem and some other basic theorems from
-complex analysis. \autoref{sec:future-plans} is devoted to my
-future plans.
+\autoref{sec:henst-kurzw-informal} I give various definitions related
+to the Henstock-Kurzweil, McShane, and GP integrals and formulate the
+divergence theorem for the GP integral. In \autoref{sec:GP-impl} I
+discuss some design choices I made in this project, both good and bad
+ones. Finally, in \autoref{sec:appl-compl-analys} I explain how to
+apply this theorem to prove the Cauchy-Goursat theorem and some other
+basic theorems from complex analysis. \autoref{sec:future-plans} is
+devoted to my future plans.
 
 \section{Generalizations of the divergence theorem}%
 \label{sec:gener-diverg-theor}
 
-The divergence theorem for \(C^{1}\) vector fields on rectangular
-boxes can be generalized in a few different directions, leading to
-several theorems, none of which implies the others.
+The divergence theorem for continuously differentiable vector fields
+on rectangular boxes can be generalized in a few different directions,
+leading to several theorems, none of which implies the others.
 
 \subsection{Shape of the domain}
 One natural direction of generalization is to deal with
-non-rectangular domains. Usually, Green's formula is stated for a
-union of elementary regions. This generalization is done (in dimension
-two) in Isabelle several years ago, see~\cite{Abdulaziz_Paulson} for
-details. I only deal with rectangular boxes, so I am not going to
-discuss this in any more details.
+non-rectangular domains. This generalization is done by Abdulaziz and
+Paulson in Isabelle for regions that can be divided both into type I
+regions by vertical lines only and into type II regions by horizontal
+lines only, see~\cite{Abdulaziz_Paulson} for details. I only deal with
+rectangular boxes, so I am not going to discuss this in any more
+details.
 
 % https://www.cl.cam.ac.uk/~lp15/papers/Formath/Greens-theorem.pdf
 
@@ -236,16 +240,13 @@ at all points of the box and are integrable on the whole box.
 Neither this generalization nor the next one imply each other. I
 formalized the other one because it implies the Cauchy--Goursat theorem.
 
-TODO: formalize this one if I have a spare evening before the deadline.
-
 \subsection{Fréchet differentiability}
-Recall that a function \(f\colon E_{1}\to E_{2}\) between normed
-vector spaces is called \emph{Fréchet differentiable} at a point \(x\)
-with derivative given by a continuous linear map
-\(f'\colon E_{1}\to E_{2}\) if \(f(x+y)=f(x)+f'(y)+o(y)\) as
-\(y\to 0\). Clearly, a Fréchet differentiable function \(f\) has all partial
-derivatives and they are equal to the values of \(f'\) on the basis
-vectors.
+A function \(f\colon E_{1}\to E_{2}\) between normed vector spaces is
+called \emph{Fréchet differentiable} at a point \(x\) with derivative
+given by a continuous linear map \(f'\colon E_{1}\to E_{2}\) if
+\(f(x+y)=f(x)+f'(y)+o(y)\) as \(y\to 0\). A Fréchet differentiable
+function \(f\) has all partial derivatives and they are equal to the
+values of \(f'\) on the basis vectors.
 
 In 1981, Mawhin~\cite{Mawhin81} introduced a generalization of the
 Henstock-Kurzweil integral he called \emph{GP-integral} (probably from
@@ -253,7 +254,7 @@ Henstock-Kurzweil integral he called \emph{GP-integral} (probably from
 following theorem.
 
 \begin{theorem}%
-  [see~\cite{TODO}]%
+  [see~\cite{Mawhin81}]%
   \label{thm:divergence}
   Let \(E\) be a real Banach space. Let \(f\colon \bbR^{n}\to E\) be a
   function that is Fréchet differentiable at all points of a closed
@@ -294,10 +295,11 @@ While my main goal was to prove the divergence theorem for the Bochner
 integral, I first proved the divergence theorem for the GP-integral,
 see below. This integral is one of possible generalizations of the
 Henstock-Kurzweil integral to higher dimension. In this section I
-recall the relevant definitions and theorems.
+state the relevant definitions and theorems.
 
 \subsection{Henstock-Kurzweil integral in dimension one}\label{sec:HK-integral-dim1}
-First recall the definition of the one-dimensional Henstock-Kurzweil integral.
+I start with the definition of the one-dimensional Henstock-Kurzweil
+integral.
 
 \begin{definition}
   We say that a tagged partition \(a=x_{0}<x_{1}<\cdots<x_{k}=b\) with
@@ -342,8 +344,8 @@ We will need a few definitions to generalize Henstock-Kurzweil
 integral to functions \(f\colon \bbR^{n}\to E\).
 
 \begin{definition}
-  The \emph{open box} \((a, b)\) is the product of open intervals
-  \((a_{i}, b_{i})\):
+  For \(a, b \in \bbR^{n}\), the \emph{open box} \((a, b)\) is the
+  product of open intervals \((a_{i}, b_{i})\), that is
   \((a, b)=\set{x\in\bbR^{n}|\forall i, x_{i}\in(a_{i}, b_{i})}\). The
   \emph{open-closed box} \((a, b]\) and the \emph{closed box}
   \([a, b]\) are defined in a similar way.
@@ -385,9 +387,10 @@ this definition (and any other generalization of the Henstock-Kurzweil
 integral that satisfies Fubini's theorem, see~\cite{Pfeffer93}), so we
 need another generalization to prove the divergence theorem.
 
-There are several generalizations of the Henstock-Kurzweil integral such that
-the divergence of any Fréchet differentiable function is integrable.
-We use the one suggested by Mawhin~\cite{Mawhin81}.
+There are several generalizations of the Henstock-Kurzweil integral
+such that the divergence of any Fréchet differentiable function is
+integrable, see Bongiorno's survey~\cite{BONGIORNO2002587}.  I use the
+one suggested by Mawhin~\cite{Mawhin81}.
 
 \begin{definition}
   The \emph{irregularity} (or \emph{distortion}) \(\Sigma(\pi)\) of a
@@ -413,7 +416,12 @@ differentiable on a closed rectangle.
 \subsection{Application to the Bochner integral}
 
 The mathlib project uses the Bochner integral as its main
-integral. A~Bochner integrable function is McShane integrable (hence,
+integral~\cite{vandoorn:LIPIcs.ITP.2021.18}. This integral is a
+generalization of the Lebesgue integral. It was introduced by Bochner
+in~\cite{Bochner1933IntegrationVF}, and it is also formalized in
+Coq~\cite{boldo2022coq} and Isabelle~\cite{Avigad17}.
+
+A~Bochner integrable function is McShane integrable (hence,
 Henstock-Kurzweil and GP integrable), thus \autoref{thm:divergence}
 holds for the Bochner integral if we assume that the divergence is
 Bochner integrable on the box. Taking the limit over an exhaustion of
@@ -423,12 +431,12 @@ whole box. Here is the precise statement of the divergence theorem for
 Bochner integral.
 
 \begin{theorem}%
-  [see~\cite{TODO}]%
   \label{thm:divergence-Bochner}
   Let \(E\) be a real Banach space with second countable
   topology\footnote{This is a technical assumption required because of
-    the way the Bochner integral is defined in mathlib.}. Let
-  \(I=(a,b]\subset\bbR^{n}\) be an open-closed box.
+    the way the Bochner integral is defined in mathlib. It is going to
+    be removed in the future.}. Let \(I=(a,b]\subset\bbR^{n}\) be an
+  open-closed box.
 
   Let \(s \subset\bbR^{n}\) be a countable set. Let
   \(f\colon \bbR^{n}\to E^{n}\) be a function that is continuous on
@@ -444,25 +452,22 @@ Bochner integral.
 \section{Divergence theorem: design choices and implementation details}%
 \label{sec:GP-impl}
 The code below uses some notation that is specific either to
-\texttt{mathlib} or this project, see \autoref{tab:notation}.
+\texttt{mathlib} or this project.
 
-\begin{table}[h]
-  \centering
-  \begin{tabular}{rp{12cm}}
-    \lstinline=Icc a b=& the closed interval \([a, b]\);\\
-    \lstinline=Ioo a b= & the open interval \((a, b)\);\\
-    \lstinline=Ioc a b= & the open-closed interval \((a, b]\);\\
-    \lstinline=ICC a b=& the unordered closed interval \([\min(a, b), \max(a, b)]\);\\
-    \lstinline=IOO a b=& the unordered open interval \((\min(a, b), \max(a, b))\);\\
-    \lstinline=ℝⁿ=& the vector space \(\bbR^{n}\), implemented as \lstinline=fin n → ℝ=,
-    where \lstinline+fin n+ is the canonical type with \(n\) elements\\
-    \lstinline=ℝ>0, ℝ≥0= & the types of positive and nonnegative real numbers, respectively;\\
-    \lstinline=e i= & \(i\)-th basis vector in \(\bbR^{n}\);\\
-    \lstinline=I= & the imaginary unit;\\
-    \lstinline=s ×ℂ t= & the product of sets on the real and imaginary axes in \(\bbC\).
-  \end{tabular}
-  \caption{Project-specific notation}\label{tab:notation}
-\end{table}
+\noindent
+\begin{tabular}{rp{12cm}}
+  \lstinline=Icc a b=& the closed interval \([a, b]\);\\
+  \lstinline=Ioo a b= & the open interval \((a, b)\);\\
+  \lstinline=Ioc a b= & the open-closed interval \((a, b]\);\\
+  \lstinline=ICC a b=& the unordered closed interval \([\min(a, b), \max(a, b)]\);\\
+  \lstinline=IOO a b=& the unordered open interval \((\min(a, b), \max(a, b))\);\\
+  \lstinline=ℝⁿ=& the vector space \(\bbR^{n}\), implemented as \lstinline=fin n → ℝ=,
+                  where \lstinline+fin n+ is the canonical type with \(n\) elements\\
+  \lstinline=ℝ>0, ℝ≥0= & the types of positive and nonnegative real numbers, respectively;\\
+  \lstinline=e i= & \(i\)-th basis vector in \(\bbR^{n}\);\\
+  \lstinline=𝑖= & the imaginary unit;\\
+  \lstinline=s ×ℂ t= & the product of sets on the real and imaginary axes in \(\bbC\).
+\end{tabular}
 
 \subsection{Boxes}\label{sec:boxes}
 
@@ -494,7 +499,7 @@ where \lstinline{with_bot α} is the type \lstinline={⊥} ∪ α=,
 implemented as a type synonym for \lstinline{option α} with custom order.
 
 The type \lstinline=with_bot (box n)= is a lattice, where the meet of
-two boxes is there intersection and the join of two boxes is the
+two boxes is their intersection and the join of two boxes is the
 minimal box that includes both of them.
 
 For an open-closed box \lstinline{I : box n}, \lstinline{I.Ioo} and
@@ -507,8 +512,8 @@ Given a box \lstinline=I : box (n + 1)= and an index
 \lstinline=I.lower ∘ i.succ_above= and
 \lstinline=I.upper ∘ i.succ_above=, where
 \lstinline=i.succ_above : fin n → fin (n + 1)= is the unique monotone
-embedding with leaving a \enquote{hole} at \(i\): it sends \(j<i\) to
-\(j\) and \(j\ge i\) to \(j+1\). I also define two embeddings
+embedding leaving a \enquote{hole} at \(i\): it sends \(j<i\) to \(j\)
+and \(j\ge i\) to \(j+1\). I also define two embeddings
 \lstinline=I.front_face i, I.back_face i : ℝⁿ → ℝⁿ⁺¹= that insert
 \lstinline=I.upper i= and \lstinline=I.lower i=, respectively, as the
 \(i\)-th coordinate. These embeddings map \lstinline=I.face i= to two
@@ -517,10 +522,10 @@ of \(I\).
 
 \subsection{Partitions}\label{sec:partitions}
 
-Recall that a \emph{partition} of a box \(I\) is a finite collection
-of pairwise disjoint boxes that cover \(I\). Sometimes it is useful to
-deal with a collection of pairwise disjoint boxes that cover only a
-part of \(I\), so I define a \emph{prepartition} of a box
+A \emph{partition} of a box \(I\) is a finite collection of pairwise
+disjoint boxes that cover \(I\). Sometimes it is useful to deal with a
+collection of pairwise disjoint boxes that cover only a part of \(I\),
+so I define a \emph{prepartition} of a box
 
 \begin{lstlisting}[caption=Definition of a prepartition]
 structure prepartition (I : box n) :=
@@ -632,9 +637,9 @@ def GP : integration_params :=
 \end{lstlisting}
 
 On the one hand, this design choice allows me to prove some lemmas
-(e.g., Henstock-Sacks inequality, see below) uniformly for all these
-integrals. On the other hand, it is hard to add more integrals (e.g.,
-those defined in~\cite{TODO}) to the hierarchy.
+(e.g., Henstock-Sacks inequality, see \autoref{sec:henst-sacks-ineq})
+uniformly for all these integrals. On the other hand, it is hard to
+add more integrals to the collection.
 
 I require that the gauge function satisfies the following
 condition. If \lstinline=l.bRiemann= is false, then this condition is
@@ -781,6 +786,11 @@ integrals. However, I never used it for functions other than the
 volumes defined by measures, so possibly this generalization is a case
 of overengineering.
 
+\begin{lstlisting}[caption={Definition of the Riemann integral sum}]
+def integral_sum (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F))
+  (π : tagged_prepartition I) : F :=
+∑ J in π.boxes, vol J (f (π.tag J))
+\end{lstlisting}
 \begin{lstlisting}[caption={A predicate saying that $f$ has integral $y$ on $I$}]
 def has_integral (I : box n) (l : integration_params) (f : ℝⁿ → E)
   (vol : n →ᵇᵃ (E →L[ℝ] F)) (y : F) : Prop :=
@@ -800,6 +810,61 @@ if h : integrable I l f vol then h.some else 0
 Usual theorems (uniqueness of the integral, Cauchy convergence test,
 additivity) immediately follow from the definition and properties of
 the limit.
+
+\subsection{The Henstock-Sacks inequality}%
+\label{sec:henst-sacks-ineq}
+
+The Henstock-Sacks inequality for the Henstock-Kurzweil integral says
+the following. Let \(f\) be a function integrable on a box \(I\); let
+\(r\colon \bbR^{n} → (0, \infty)\) be a function such that for any
+tagged partition of \(I\) subordinate to \(r\), the integral sum over
+this partition is \(\eps\)-close to the integral. Then for any tagged
+\emph{prepartition} \(\pi\), the integral sum over \(\pi\) differs
+from the integral of \(f\) over the part of \(I\) covered by \(\pi\)
+by at most \(\eps\).
+
+This inequality is used, e.g., to prove that a function that is
+Henstock-Kurzweil integrable on a box \(I\), is Henstock-Kurzweil
+integrable on any subbox of \(I\) and defines a box-additive function
+on subboxes of \(I\). I prove several versions of this inequality for
+any of the \enquote{box} integrals.
+
+Instead of using predicate assumptions on \(r\), I define
+\begin{lstlisting}
+def convergence_r (h : integrable I l f vol) (ε : ℝ) (c : ℝ≥0) :
+  ℝⁿ → ℝ>0
+\end{lstlisting}
+to be a function such that
+\begin{itemize}
+\item if \lstinline=l.bRiemann=, then \(r\) is a constant;
+\item if \(\eps > 0\), then for any tagged partition \(\pi\) of \(I\)
+  satisfying the predicate \lstinline=l.mem_base_set I c r=, the
+  integral sum of \(f\) over \(\pi\) differs from the integral of
+  \(f\) over \(I\) by at most~\(\eps\).
+\end{itemize}
+
+Let me quote two versions of the Henstock-Sacks inequality here. One
+version compares the Riemann sums of a function over two prepartitions
+that cover the same part of the box.
+\begin{lstlisting}
+lemma dist_integral_sum_le_of_mem_base_set (h : integrable I l f vol)
+  (hpos₁ : 0 < ε₁) (hpos₂ : 0 < ε₂)
+  (h₁ : l.mem_base_set I c₁ (h.convergence_r ε₁ c₁) π₁)
+  (h₂ : l.mem_base_set I c₂ (h.convergence_r ε₂ c₂) π₂)
+  (HU : π₁.Union = π₂.Union) :
+  dist (integral_sum f vol π₁) (integral_sum f vol π₂) ≤ ε₁ + ε₂
+\end{lstlisting}
+
+The other replaces one of these Riemann sums with the sum of integrals
+of the function over the boxes of the partition.
+
+\begin{lstlisting}
+lemma dist_integral_sum_sum_integral_le_of_mem_base_set_of_Union_eq
+  (h : integrable I l f vol) (h0 : 0 < ε)
+  (hπ : l.mem_base_set I c (h.convergence_r ε c) π)
+  (hU : π.Union = π₀.Union) :
+  dist (integral_sum f vol π) (∑ J in π₀.boxes, integral J l f vol) ≤ ε
+\end{lstlisting}
 
 \subsection{Divergence theorem for the GP-integral}%
 \label{sec:diverg-theor-gp}
@@ -856,14 +921,11 @@ continuity of \(f\) at \(x\).
 \subsection{McShane and Bochner integrability}%
 \label{sec:mcsh-bochn-integr}
 
-The Lean mathematical library uses the Bochner integral as its main
-definition of an integral. This integral is a generalization of the
-Lebesgue integral, see~\cite{TODO} for details. In order to transfer
-the result from the GP-integral to the Bochner integral, I prove that
-any Bochner integrable function is integrable in the sense of any box
-integral with \lstinline~bRiemann = ff~. In other words, a Bochner
-integrable function is integrable in the sense of the McShane,
-Henstock-Kurzweil, and GP-integrals.
+In order to transfer the result from the GP-integral to the Bochner
+integral, I prove that any Bochner integrable function is integrable
+in the sense of any box integral with \lstinline~bRiemann = ff~. In
+other words, a Bochner integrable function is integrable in the sense
+of the McShane, Henstock-Kurzweil, and GP-integrals.
 
 \begin{lstlisting}{caption=Bochner integrability implies box integrability}
 lemma integrable_on.has_box_integral {f : ℝⁿ → E} {μ : measure ℝⁿ}
@@ -872,7 +934,7 @@ lemma integrable_on.has_box_integral {f : ℝⁿ → E} {μ : measure ℝⁿ}
   has_integral I l f μ.to_box_additive.to_smul (∫ x in I, f x ∂μ)
 \end{lstlisting}
 
-The proof follows~\cite{TODO}, with some modifications required to
+The proof follows~\cite{Gordon55}, with some modifications required to
 generalize it from a function \(f\colon\bbR\to\bbR\) to a function
 \(f\colon\bbR^{n}\to E\).
 
@@ -936,16 +998,16 @@ of~\eqref{eqn:green-rect} equals zero. It is easy to see that the
 right hand side is equal to the integral
 \(\int_{\partial R}f(z)\,dz\).
 
-\begin{lstlisting}[caption={Cauchy-Goursat theorem for a rectangle},label=lst:cauchy-rect]
+\begin{lstlisting}[caption={The Cauchy-Goursat theorem for a rectangle},label=lst:cauchy-rect]
 lemma cauchy_theorem_rect (f : ℂ → E) (z w : ℂ)
   (s : set ℂ) (hs : countable s)
   (Hc : continuous_on f (ICC z.re w.re ×ℂ Icc z.im w.im))
   (Hd : ∀ x ∈ (IOO z.re w.re ×ℂ IOO z.im w.im) \ s,
     differentiable_at ℂ f x) :
-  (∫ x in z.re..w.re, f (x + z.im * I)) -
-    (∫ x in z.re..w.re, f (x + w.im * I)) +
-    (I • ∫ y in z.im..w.im, f (re w + y * I)) -
-    I • ∫ y in z.im..w.im, f (re z + y * I) = 0 :=
+  (∫ x in z.re..w.re, f (x + z.im * 𝑖)) -
+    (∫ x in z.re..w.re, f (x + w.im * 𝑖)) +
+    (𝑖 • ∫ y in z.im..w.im, f (re w + y * 𝑖)) -
+    𝑖 • ∫ y in z.im..w.im, f (re z + y * 𝑖) = 0 :=
 \end{lstlisting}
 
 To formulate the Cauchy-Goursat theorem for an annulus and a circle, I
@@ -953,7 +1015,7 @@ define the circle integral \(\oint_{|z-c|=R}f(z)\,dz\) as
 \(\int_{0}^{2\pi}(c+Re^{\theta i})'f(c+Re^{\theta i})\,d\theta\).
 
 \begin{lstlisting}[caption=Definition of the circle integral \(\oint_{|z-c|=R}f(z)\,dz\)]
-def circle_map (c : ℂ) (R : ℝ) : ℝ → ℂ := λ θ, c + R * exp (θ * I)
+def circle_map (c : ℂ) (R : ℝ) : ℝ → ℂ := λ θ, c + R * exp (θ * 𝑖)
 
 def circle_integral (f : ℂ → E) (c : ℂ) (R : ℝ) : E :=
 ∫ θ in 0..2 * π, deriv (circle_map c R) θ • f (circle_map c R θ)
@@ -964,7 +1026,7 @@ Applying the Cauchy-Goursat theorem for a rectangle to the function
 \(0\le \Im z\le 2\pi\), I prove the Cauchy-Goursat theorem for a
 function differentiable on an annulus.
 
-\begin{lstlisting}[caption=Cauchy-Goursat theorem for an annulus,label=lst:cauchy-annulus]
+\begin{lstlisting}[caption=The Cauchy-Goursat theorem for an annulus,label=lst:cauchy-annulus]
 lemma cauchy_thm_annulus {c : ℂ} {r R : ℝ} (h0 : 0 < r)
   (hle : r ≤ R) {f : ℂ → E} {s : set ℂ} (hs : countable s)
   (hc : continuous_on f (closed_ball c R \ ball c r))
@@ -985,13 +1047,13 @@ lemma cauchy_integral_disk_center {R : ℝ} (h0 : 0 < R)
   {f : ℂ → E} {c : ℂ} {s : set ℂ} (hs : countable s)
   (hc : continuous_on f (closed_ball c R))
   (hd : ∀ z ∈ ball c R \ s, differentiable_at ℂ f z) :
-  ∮ z in C(c, R), (z - c)⁻¹ • f z = (2 * π * I : ℂ) • f c :=
+  ∮ z in C(c, R), (z - c)⁻¹ • f z = (2 * π * 𝑖 : ℂ) • f c :=
 \end{lstlisting}
 
 Applying this lemma to the function \((z-c)\cdot f(z)\), we prove the
 Cauchy-Goursat theorem for a disk.
 
-\begin{lstlisting}[caption=Cauchy-Goursat theorem for a disk,label=lst:cauchy-circle]
+\begin{lstlisting}[caption=The Cauchy-Goursat theorem for a disk,label=lst:cauchy-circle]
 lemma cauchy_thm_disk {R : ℝ} (h0 : 0 ≤ R) {f : ℂ → E}
   {c : ℂ} {s : set ℂ} (hs : countable s)
   (hc : continuous_on f (closed_ball c R))
@@ -1027,7 +1089,7 @@ lemma cauchy_integral_disk {R : ℝ} {c w : ℂ} {f : ℂ → E} {s : set ℂ}
   (hs : countable s) (hw : w ∈ ball c R)
   (hc : continuous_on f (closed_ball c R))
   (hd : ∀ x ∈ ball c R \ s, differentiable_at ℂ f x) :
-  (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - w)⁻¹ • f z = f w :=
+  (2 * π * 𝑖 : ℂ)⁻¹ • ∮ z in C(c, R), (z - w)⁻¹ • f z = f w :=
 \end{lstlisting}
 
 The Cauchy integral formula immediately implies that a function
@@ -1040,7 +1102,7 @@ given by Cauchy integrals.
 def cauchy_power_series (f : ℂ → E) (c : ℂ) (R : ℝ) :
   formal_multilinear_series ℂ ℂ E :=
 λ n, continuous_multilinear_map.mk_pi_field ℂ _ $
-  (2 * π * I : ℂ)⁻¹ • ∮ z in C(c, R), (z - c) ^ (-n - 1 : ℤ) • f z
+  (2 * π * 𝑖 : ℂ)⁻¹ • ∮ z in C(c, R), (z - c) ^ (-n - 1 : ℤ) • f z
 \end{lstlisting}
 
 \begin{lstlisting}[caption=Analyticity of a complex differentiable function,label=lst:diff-analytic]
@@ -1050,7 +1112,18 @@ lemma analytic_of_differentiable {R : ℝ≥0} {c : ℂ} {f : ℂ → E}
   has_fpower_series_on_ball f (cauchy_power_series f c R) c R :=
 \end{lstlisting}
 
-TODO: removable singularity, max modulus
+I started to use these theorems to build a complex analysis library in
+Lean. For example, I proved the Riemann removable singularity theorem.
+
+\begin{lstlisting}
+lemma removable_singularity
+  (hd : ∀ᶠ z in 𝓝[≠] c, differentiable_at ℂ f z)
+  (ho : is_o (λ z, f z - f c) (λ z, (z - c)⁻¹) (𝓝[≠] c)) :
+  ∃ y : E, tendsto f (𝓝[≠] c) (𝓝 y)
+\end{lstlisting}
+
+Here \lstinline{𝓝[≠] c} is the filter of punctured neighborhoods of
+\(c\).
 
 \section{Future plans}\label{sec:future-plans}
 
@@ -1058,8 +1131,8 @@ TODO: removable singularity, max modulus
 
 One possible direction of improvement would be to formalize the
 divergence theorem for (some of the) other integrals listed in the
-survey~\cite{TODO}. Some of these theorems allow the function to be
-continuous, not differentiable, on a countable set of
+survey~\cite{BONGIORNO2002587}. Some of these theorems allow the
+function to be continuous, not differentiable, on a countable set of
 \emph{hyperplanes}. These theorems can be transfered to more general
 versions of the Cauchy-Goursat theorems.
 
@@ -1074,10 +1147,8 @@ one has to seriously refactor the definition.
 Most of the proofs discussed in \autoref{sec:appl-compl-analys} can be
 easily generalized to the case of a function
 \(f\colon \bbC^{n}\to E\). I mentor an undergraduate student who tries
-to do that as a part of a course. The generalization will be done by
-summer, either by the student or by myself.
-
-TODO say that HOL-Light has a library about multivariable complex analysis.
+to generalize the Cauchy integral formula as a part of a course. The
+generalization will be done by summer.
 
 \subsection{The Cauchy-Goursat theorem for any domain}\label{sec:cauchy-goursat-any}
 
@@ -1093,8 +1164,8 @@ topological lemmas that are not in \texttt{mathlib} yet.
 
 Formalization of the Cauchy-Goursat theorem makes it possible to
 formalize many theorems from the one-dimensional complex analysis. I
-already formalized the removable singularity theorem and the maximum
-modulus principle but clearly this is just the beginning.
+already formalized the removable singularity theorem but clearly this
+is just the beginning.
 
 My main goal for the next year or two is to formalize Ilyashenko's
 proof of the fact that a polynomial vector field on \(\bbR^{2}\) has
@@ -1102,4 +1173,5 @@ only finitely many limit cycles (i.e., isolated periodic solutions),
 at least in the case of hyperbolic singular points. The proof of this
 theorem heavily relies on the complex analysis.
 
+\bibliography{divthm}
 \end{document}
