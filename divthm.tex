@@ -45,6 +45,7 @@
 \newcommand{\bbN}{\mathbb{N}}
 \newcommand{\eps}{\varepsilon}
 \DeclareMathOperator{\divg}{div}
+\DeclareMathOperator{\const}{const}
 \undef\Re\DeclareMathOperator{\Re}{Re}
 \undef\Im\DeclareMathOperator{\Im}{Im}
 
@@ -149,11 +150,11 @@ Cauchy-Goursat theorem becomes a simple corollary of the general
 divergence theorem. Also, the assumptions in the Cauchy-Goursat
 theorem are slightly weaker than in most textbooks.
 
-The most similar other project is the formalization of the Green's
-theorem for any elementary region in Isabelle. Neither of these two
-theorems implies the other. Here are the key points where one of the
-formalizations is more general than the other, see also
-\autoref{sec:gener-diverg-theor}.
+The most similar other project is Abdulaziz and Paulson's
+formalization of the Green's theorem for any elementary region in
+Isabelle~\cite{TODO}. Neither of these two theorems implies the
+other. Here are the key points where one of the formalizations is more
+general than the other, see also \autoref{sec:gener-diverg-theor}.
 
 \begin{description}
 \item[shape of the domain] Isabelle formalization works with any
@@ -500,7 +501,7 @@ For an open-closed box \lstinline{I : box n}, \lstinline{I.Ioo} and
 \lstinline{I.Icc} are the corresponding open and closed boxes,
 respectively.
 
-Given a box \lstinline=I : box (fin (n + 1))= and an index
+Given a box \lstinline=I : box (n + 1)= and an index
 \lstinline=i : fin (n + 1)=, I define the \(i\)-th \emph{face} of
 \(I\) to be the box with lower and upper vertices given by
 \lstinline=I.lower ∘ i.succ_above= and
@@ -688,6 +689,80 @@ l.to_filter I ⊓ 𝓟 {π | π.Union = π₀.Union}
 The filter \lstinline=to_filter= is useful to prove facts about
 integrals on subboxes.
 
+\subsection{Box-additive function}%
+\label{sec:box-addit-funct}
+
+I introduce the following definition.
+
+\begin{definition}
+  A function on boxes in \(\bbR^{n}\) taking values in an additive
+  group is said to be \emph{box-additive} if for any box \(I\) and its
+  partition \(\pi\), the sum of its values on the boxes of \(\pi\) is
+  equal to its value on \(I\).
+
+  A function is said to be \emph{box-additive on subboxes of
+    \(I_{0}\)} if the same property holds true whenever \(I\le I_{0}\).
+\end{definition}
+
+In order to deal with these two notions simultaneously, the actual
+definition takes an argument of the type
+\lstinline=with_top (box n)=. Similarly to the type
+\lstinline=with_bot (box n)=, this type is the disjoint union of
+\lstinline=box n= and the top element \lstinline=⊤=.
+
+\begin{lstlisting}[caption=Definition of a box additive function,label={lst:box-additive}]
+structure box_additive_map (n : ℕ) (M : Type*) [add_comm_monoid M]
+  (I : with_top (box n)) :=
+(to_fun : box n → M)
+(sum_partition_boxes' : ∀ J : box n, ↑J ≤ I →
+  ∀ π : prepartition J, π.is_partition →
+    ∑ Ji in π.boxes, to_fun Ji = to_fun J)
+\end{lstlisting}
+
+I use notation \lstinline=n →ᵇᵃ M= for functions that are box-additive
+on the whole space and \lstinline=n →ᵇᵃ[I] M= for functions that are
+box-additive on subboxes of \(I\).
+
+It suffices to verify additivity only on the two-box partitions
+\lstinline=split= introduced above.
+\begin{lstlisting}
+def of_map_split_add (f : box n → M) (I₀ : with_top (box n))
+  (hf : ∀ I : box n, ↑I ≤ I₀ → ∀ {i x}, x ∈ Ioo (I.lower i) (I.upper i) →
+    f (I.split_lower i x) + f (I.split_upper i x) = f I) :
+  n →ᵇᵃ[I₀] M
+\end{lstlisting}
+
+Here \lstinline=I.split_lower i x= and \lstinline=I.split_upper i x=
+are the boxes of the partition \lstinline=split I=. Since one of them
+can be empty, they have type \lstinline=with_bot (box n)=, so the
+actual code looks like \lstinline=option.elim (I.split_lower i x) 0 f=
+instead of \lstinline=f (I.split_lower i x)=.
+
+Each locally finite measure \(\mu\) defines a box-additive function.
+Next, if \(f\colon\bbR^{n}\to E\) is integrable (in any reasonable
+sense) on a box~\(I\), then its integral over a box is a box-additive
+function on subboxes of \(I\).
+
+One more construction of box-additive functions appears in the proof
+of the divergence theorem. Given a box-additive function \(f_{y}\) on
+each cross-section \(x_{i}=y\), \(y \in [a_{i}, b_{i}]\) of a closed
+box \lstinline~I₀.Icc = [a, b]~, the function given by
+\lstinline~g J = f (J.upper i) (J.face i) - f (J.lower i) (J.face i)~
+is box additive on subboxes of~\(I_{0}\).
+
+To ensure nice definitional equality properties of the result, the
+actual definition involves two functions and a proof that they are
+equal on all the boxes relevant to the definition.
+
+\begin{lstlisting}
+def upper_sub_lower {G : Type u} [add_comm_group G]
+  (I₀ : box (n + 1)) (i : fin (n + 1)) (f : ℝ → box n → G)
+  (fb : Icc (I₀.lower i) (I₀.upper i) → n →ᵇᵃ[I₀.face i] G)
+  (hf : ∀ x (hx : x ∈ Icc (I₀.lower i) (I₀.upper i)) J,
+    f x J = fb ⟨x, hx⟩ J) :
+  (n + 1) →ᵇᵃ[I₀] G :=
+\end{lstlisting}
+
 \subsection{Box integral}%
 \label{sec:box-integral}
 
@@ -808,7 +883,7 @@ Since any Bochner integrable function is GP-integrable, we immediately
 obtain the following result for the Bochner integral.
 
 \begin{lstlisting}
-lemma aux (I : box (fin (n + 1))) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
+lemma aux (I : box (n + 1)) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
   (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹) (s : set ℝⁿ⁺¹) (hs : countable s)
   (Hc : continuous_on f I.Icc)
   (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
