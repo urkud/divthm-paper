@@ -2,7 +2,7 @@
 
 \bibliographystyle{plainurl}% the mandatory bibstyle
 
-\author{Yury Kudryashov}{University of Toronto at Mississauga, Canada (till July 2022); Texas A\&M University (since August 2022)}{urkud@urkud.name}{https://orcid.org/0000-0003-4286-9276}{}
+\author{Yury Kudryashov}{University of Toronto at Mississauga, Canada (till July 2022); Texas A\&M University, USA (since August 2022)}{urkud@urkud.name}{https://orcid.org/0000-0003-4286-9276}{}
 % TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
 
 \authorrunning{Yu. Kudryashov} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
@@ -37,6 +37,7 @@
 % \nolinenumbers %uncomment to disable line numbering
 
 \usepackage{csquotes,braket,upgreek,MnSymbol}
+\usepackage{todonotes}
 
 \definecolor{keywordcolor}{rgb}{0.7, 0.1, 0.1}   % red
 \definecolor{commentcolor}{rgb}{0.4, 0.4, 0.4}   % grey
@@ -102,11 +103,11 @@ The divergence theorem says that, under certain assumptions, the
 integral of the divergence of a vector field over a region is equal to
 the flow of this vector field through the boundary of the region. For
 a rectangular region on the plane, this can be written as
-\begin{equation}
+\begin{multline}
   \label{eqn:green-rect}
-  \int_{a}^{b}\int_{c}^{d}\frac{\partial f(x, y)}{\partial x}+\frac{\partial g(x, y)}{\partial y}dydx=
-  \int_{a}^{b}g(x, d)-g(x, c)dx+\int_{c}^{d}f(x, b)-f(x, a)dy,
-\end{equation}
+  \int_{a}^{b}\int_{c}^{d}\left(\frac{\partial f(x, y)}{\partial x}+\frac{\partial g(x, y)}{\partial y}\right)dydx=\\
+  \int_{a}^{b}\left(g(x, d)-g(x, c)\right)dx+\int_{c}^{d}\left(f(b, y)-f(a, y)\right)dy,
+\end{multline}
 where \(f, g\colon \bbR^{2}\to E\) are functions from the plane to
 some Banach space. This statement is also known as Green's theorem.
 For continuously differentiable functions \(f\), \(g\), the equality
@@ -138,12 +139,15 @@ very different.
 Here is the list of most important definitions and theorems I
 formalize in this project.
 \begin{itemize}
-\item Riemann, McShane, Henstock-Kurzweil, and GP integrals of a
+\item Riemann, McShane, Henstock-Kurzweil, and GP-integrals of a
   function from a box in \(\bbR^{n}\) to a real Banach space, see
   \cref{sec:henst-kurzw-informal,sec:GP-impl};
-\item the divergence theorem for the GP integral, see
+\item the divergence theorem for the GP-integral, see
   \cref{thm:divergence,lst:divergence-GP};
-\item the divergence theorem for the Bochner integral, see
+\item the divergence theorem for the Bochner integral\footnote{The
+    Bochner integral is a generalization of the Lebesgue integral to
+    functions that take values in Banach spaces, see
+    \autoref{ssec:Bochner} for more details.}, see
   \cref{thm:divergence-Bochner,lst:divergence-bochner};
 \item the Cauchy-Goursat theorem for rectangles, annuli, and disks,
   see \cref{lst:cauchy-rect,lst:cauchy-annulus,lst:cauchy-circle};
@@ -179,11 +183,12 @@ the other, see also \autoref{sec:gener-diverg-theor}.
   makes no regularity assumptions for the GP-integral and assumes only
   integrability of the divergence for the Henstock-Kurzweil and
   Bochner integrals;
-\item[dimension] The Isabelle formalization only deals with dimension two
-  while I formalize the divergence theorem in any dimension;
-\item[codomain] The Isabelle formalization only works for finite
-  dimensional codomain while my formalization works for any Banach
-  space.
+\item[domain dimension] The Isabelle formalization only deals with
+  dimension two while I formalize the divergence theorem in any finite
+  dimension;
+\item[codomain dimension] The Isabelle formalization only works for
+  finite dimensional codomain while my formalization works for any
+  Banach space.
 \end{description}
 
 The complex analysis part of the project does not try to compete with
@@ -198,6 +203,8 @@ Lean~\cite{10.1007/978-3-319-21401-6_26} mathematical library
 changed some names (the \texttt{mathlib} naming convention sometimes
 leads to very long names) and notation in the code listings below.
 
+\todo[inline]{A few words about the axiom of choice.}
+
 \subsection{Structure of the paper}%
 \label{sec:structure-paper}
 
@@ -205,8 +212,8 @@ In \autoref{sec:gener-diverg-theor} I informally discuss different
 ways to generalize the divergence theorem mentioned above, including
 comparison with the formalization in Isabelle. Then in
 \autoref{sec:henst-kurzw-informal} I give various definitions related
-to the Henstock-Kurzweil, McShane, and GP integrals and formulate the
-divergence theorem for the GP integral. In \autoref{sec:GP-impl} I
+to the Henstock-Kurzweil, McShane, and GP-integrals and formulate the
+divergence theorem for the GP-integral. In \autoref{sec:GP-impl} I
 discuss some design choices I made in this project. Finally, in
 \autoref{sec:appl-compl-analys} I explain how to apply this theorem to
 prove the Cauchy-Goursat theorem and some other basic theorems from
@@ -359,6 +366,10 @@ integral to functions \(f\colon \bbR^{n}\to E\).
   \emph{open-closed box} \((a, b]\) and the \emph{closed box}
   \([a, b]\) are defined in a similar way.
 
+  The \emph{distortion} (or \emph{irregularity}) \(\sigma(I)\) of an
+  open-closed box \(I=(a, b]\) is the maximum of the ratios
+  \(\frac{b_{i}-a_{i}}{b_{j}-a_{j}}\) over all \(i, j\).
+
   A \emph{partition} of an open-closed box \(I=(a, b]\) is a finite
   collection of pairwise disjoint boxes \(J_{k}=(a_{k}, b_{k}]\) that
   cover \(I\).
@@ -372,7 +383,7 @@ integral to functions \(f\colon \bbR^{n}\to E\).
   \(\xi_{k}\in [c_{k}, d_{k}]\), where \(J_{k}=(c_{k}, d_{k}]\).
 
   A tagged partition \(\set{(J_{k}, \xi_{k})}\) of a box \(I\) is
-  \emph{subordinate} to a gauge function
+  \emph{subordinate} to a \emph{gauge function}
   \(\delta\colon \bbR^{n}\to\bbR_{>0}\) if each box \(J_{k}\) is
   included by the closed box
   \(B_{\delta(\xi_{k})}(\xi_{k})=[\xi_{k}-\delta(\xi_{k}),
@@ -403,8 +414,8 @@ one suggested by Mawhin~\cite{Mawhin81}.
 
 \begin{definition}%
   \label{def:GP-integral}
-  The \emph{irregularity} (or \emph{distortion}) \(\Sigma(\pi)\) of a
-  partition \(\pi=\set{J_{k}}\) is the maximum of rates of stretching
+  The \emph{distortion} (or \emph{irregularity}) \(\Sigma(\pi)\) of a
+  partition \(\pi=\set{J_{k}}\) is the maximum of the distortions
   \(\sigma(J_{k})\) of the boxes \(J_{k}\).
 
   A function \(f\colon \bbR^{n}\to E\) is \emph{GP-integrable} on a
@@ -423,7 +434,7 @@ In dimension two, this theorem implies~\eqref{eqn:green-rect} for any
 pair of functions \(f, g \colon \bbR^{2}\to E^{2}\) Fréchet
 differentiable on a closed rectangle.
 
-\subsection{Application to the Bochner integral}
+\subsection{Application to the Bochner integral}\label{ssec:Bochner}
 
 The mathlib project uses the Bochner integral as its main
 integral~\cite{vandoorn:LIPIcs.ITP.2021.18}. This integral is a
@@ -431,32 +442,29 @@ generalization of the Lebesgue integral. It was introduced by Bochner
 in~\cite{Bochner1933IntegrationVF}, and it is also formalized in
 Coq~\cite{boldo2022coq} and Isabelle~\cite{Avigad17}.
 
-A~Bochner integrable function is McShane integrable (hence
-Henstock-Kurzweil and GP integrable), thus \autoref{thm:divergence}
-holds for the Bochner integral if we assume that the divergence is
-Bochner integrable on the box. Taking the limit over an exhaustion of
-the box by smaller boxes, one can generalize the theorem to functions
-that are differentiable in the interior of a box and continuous on the
-whole box. Here is the precise statement of the divergence theorem for
-Bochner integral.
+A~Bochner integrable function on a box in \(\bbR^{n}\) is McShane
+integrable (hence Henstock-Kurzweil and GP-integrable)\todo{define
+  McShane integrability in higher dimension?}, thus
+\autoref{thm:divergence} holds for the Bochner integral if we assume
+that the divergence is Bochner integrable on the box. Taking the limit
+over an exhaustion of the box by smaller boxes, one can generalize the
+theorem to functions that are differentiable in the interior of a box
+and continuous on the whole box. Here is the precise statement of the
+divergence theorem for Bochner integral.
 
 \begin{theorem}%
   \label{thm:divergence-Bochner}
-  Let \(E\) be a real Banach space with second countable
-  topology\footnote{This is a technical assumption required because of
-    the way the Bochner integral is defined in mathlib. It is going to
-    be removed in the future.}. Let \(I=(a,b]\subset\bbR^{n}\) be an
-  open-closed box.
-
-  Let \(s \subset\bbR^{n}\) be a countable set. Let
-  \(f\colon \bbR^{n}\to E^{n}\) be a function that is continuous on
-  \(\overline I\) and is Fréchet differentiable at all points of
-  \(\mathring I \setminus s\). Assume that the divergence
+  Let \(E\) be a real Banach space. Let \(I=(a,b]\subset\bbR^{n}\) be
+  an open-closed box. Let \(s \subset\bbR^{n}\) be a countable
+  set. Let \(f\colon \bbR^{n}\to E^{n}\) be a function that is
+  continuous on \(\overline I\) and is Fréchet differentiable at all
+  points of \(\mathring I \setminus s\). Assume that the divergence
   \(\divg f=\sum_{i=1}^{n}\frac{\partial f_{i}}{\partial x_{i}}\) is
   Bochner integrable on \(I\). Then its integral is equal to the sum
   of integrals of \(f\) over the faces of \(\overline I\) taken with
   appropriate signs (plus for the integral over a front face
-  \(x_{i}=b_{i}\) and minus for the integral over a back face).
+  \(x_{i}=b_{i}\) and minus for the integral over a back face
+  \(x_{i}=a_{i}\)).
 \end{theorem}
 
 \section{Divergence theorem: design choices and implementation details}%
@@ -519,7 +527,7 @@ respectively.
 
 Given a box \lstinline=I : box (n + 1)= and an index
 \lstinline=i : fin (n + 1)=, I define the \(i\)-th \emph{face} of
-\(I\) to be the box with lower and upper vertices given by
+\(I\) to be the box in \(\bbR^{n}\) with lower and upper vertices given by
 \lstinline=I.lower ∘ i.succ_above= and
 \lstinline=I.upper ∘ i.succ_above=, where
 \lstinline=i.succ_above : fin n → fin (n + 1)= is the unique monotone
@@ -560,8 +568,8 @@ following predicates, relations, and operations.
   \(\pi_{1}\le\pi_{2}\)&we say that one prepartition is less than or equal to another if each box of the former is included in some box of the latter; with this order, we get a bounded meet-semilattice structure on prepartitions of a box;\\
   \lstinline=Union=&the union of all boxes of a prepartition, as a set in \(\bbR^{n}\); for a partition, this union is equal to the original box;\\
   \lstinline=bUnion=&given a prepartition \(\pi\) of \(I\) and a function \(\pi'\) that sends each box in \(\bbR^{n}\) to a prepartition of that box, returns the prepartition of \(I\) formed by the boxes of \(\pi' J\), \(J \in \pi\);\\
-  \lstinline=split_center=&the partition of a box into \(2^{n}\) subboxes by the hyperplanes passing through the center of the box;\\
-  \lstinline=split=&the partition of a box into two subboxes by a hyperplane (or the trivial one-box partition if the hyperplane does not meet the box);\\
+  \lstinline=split_center=&the partition of a box into \(2^{n}\) subboxes by the coordinate hyperplanes passing through the center of the box;\\
+  \lstinline=split=&the partition of a box into two subboxes by a coordinate hyperplane (or the trivial one-box partition if the hyperplane does not meet the box);\\
   \lstinline=compl=&an unspecified prepartition such that \lstinline~π.compl.Union = I \ π.Union~; I prove that it exists, then use the axiom of choice to get a witness.
 \end{tabular}
 
@@ -576,13 +584,13 @@ any function.
 
 I prove two versions of this lemma. First I prove the lemma as stated
 in the previous paragraph with an additional assertion that all boxes
-of the partition are homothetic to the original box.
+of the partition are homothetic to the original box.\todo{Explain}
 
 \begin{lstlisting}[caption={Cousin's lemma, version 1}]
 lemma exists_subordinate_Henstock (I : box n) (r : ℝⁿ → ℝ>0) :
   ∃ π : tagged_prepartition I, π.is_partition ∧ π.is_Henstock ∧
     π.is_subordinate r ∧
-    (∀ J ∈ π, ∃ m : ℕ, ∀ i, (J : _).upper i - J.lower i =
+    (∀ J ∈ π, ∃ m : ℕ, ∀ i, J.upper i - J.lower i =
       (I.upper i - I.lower i) / 2 ^ m) ∧
     π.distortion = I.distortion
 \end{lstlisting}
@@ -627,7 +635,7 @@ The parameters have the following meaning:
 \end{tabular}
 
 E.g., the following integration parameters are used to define the
-Riemann, Henstock-Kurzweil, McShane, and GP integrals.
+Riemann, Henstock-Kurzweil, McShane, and GP-integrals.
 \begin{lstlisting}[caption={Parameters corresponding to well-known integrals}]
 def Riemann : integration_params :=
 { bRiemann := tt,
@@ -653,7 +661,7 @@ def GP : integration_params :=
 On one hand, this design choice allows me to prove some lemmas (e.g.,
 Henstock-Sacks inequality, see \autoref{sec:henst-sacks-ineq})
 uniformly for all these integrals. On the other hand, it is hard to
-add more integrals to the collection.
+add more integrals to the collection\todo{List some}.
 
 I require that the gauge function satisfies the following
 condition. If \lstinline=l.bRiemann= is false, then this condition is
@@ -688,8 +696,8 @@ instead of adding an explicit assumption \(c>1\) here and there and
 proving one more lemma.
 
 The most important filter related to a set of integration parameters
-is the filter \lstinline=to_filter_Union= below. The Cousin's lemma
-from \autoref{sec:cousins-lemma} implies that this filter is
+is the filter \lstinline=to_filter_Union= below. Cousin's lemma from
+\autoref{sec:cousins-lemma} implies that this filter is
 nontrivial. The actual definition uses more intermediate filters but
 the result is equal (though not definitionally equal) to the code in
 the listing below.
@@ -743,7 +751,7 @@ on the whole space and \lstinline=n →ᵇᵃ[I] M= for functions that are
 box-additive on subboxes of \(I\).
 
 It suffices to verify additivity only on the two-box partitions
-\lstinline=split= introduced above.
+\lstinline=split= introduced above.\todo{Explain}
 \begin{lstlisting}
 def of_map_split_add (f : box n → M) (I₀ : with_top (box n))
   (hf : ∀ I : box n, ↑I ≤ I₀ → ∀ {i x}, x ∈ Ioo (I.lower i) (I.upper i) →
@@ -798,7 +806,7 @@ continuous linear functions \lstinline=E →L[ℝ] F=. This way one can
 use the same definition, e.g., for Riemann-Stieltjes
 integrals. However, I never used it for functions other than the
 volumes defined by measures, so possibly this generalization is a case
-of overengineering.
+of overengineering.\todo{Explain}
 
 \begin{lstlisting}[caption={Definition of box-style integrals}]
 def integral_sum (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F))
@@ -827,12 +835,12 @@ the limit.
 
 The Henstock-Sacks inequality for the Henstock-Kurzweil integral says
 the following. Let \(f\) be a function integrable on a box \(I\); let
-\(r\colon \bbR^{n} \to \bbR_{>0}\) be a function such that for any
-tagged partition of \(I\) subordinate to \(r\), the integral sum over
-this partition is \(\eps\)-close to the integral. Then for any tagged
-\emph{prepartition} \(\pi\), the integral sum over \(\pi\) differs
-from the integral of \(f\) over the part of \(I\) covered by \(\pi\)
-by at most \(\eps\).
+\(\delta\colon \bbR^{n} \to \bbR_{>0}\) be a gauge function such that
+for any tagged partition of \(I\) subordinate to \(\delta\), the
+integral sum over this partition is \(\eps\)-close to the
+integral. Then for any tagged \emph{prepartition} \(\pi\), the
+integral sum over \(\pi\) differs from the integral of \(f\) over the
+part of \(I\) covered by \(\pi\) by at most \(\eps\).
 
 This inequality is used, e.g., to prove that a function that is
 Henstock-Kurzweil integrable on a box \(I\), is Henstock-Kurzweil
@@ -840,16 +848,17 @@ integrable on any subbox of \(I\) and defines a box-additive function
 on subboxes of \(I\). I prove several versions of this inequality for
 any of the \enquote{box} integrals.
 
-Instead of using predicate assumptions on \(r\), I define
+Instead of using predicate assumptions on \(\delta\), I define
 \begin{lstlisting}
 def convergence_r (h : integrable I l f vol) (ε : ℝ) (c : ℝ≥0) :
   ℝⁿ → ℝ>0
 \end{lstlisting}
-to be a function such that
+to be a function \(\delta\colon\mathbb R^{n}\to\mathbb R_{>0}\) such
+that
 \begin{itemize}
-\item if \lstinline=l.bRiemann=, then \(r\) is a constant;
+\item if \lstinline=l.bRiemann=, then \(\delta\) is a constant;
 \item if \(\eps > 0\), then for any tagged partition \(\pi\) of \(I\)
-  satisfying the predicate \lstinline=l.mem_base_set I c r=, the
+  satisfying the predicate \lstinline=l.mem_base_set I c δ=, the
   integral sum of \(f\) over \(\pi\) differs from the integral of
   \(f\) over \(I\) by at most~\(\eps\).
 \end{itemize}
@@ -948,6 +957,8 @@ lemma integrable_on.has_box_integral {f : ℝⁿ → E} {μ : measure ℝⁿ}
 The proof follows~\cite{Gordon55}, with some modifications required to
 generalize it from a function \(f\colon\bbR\to\bbR\) to a function
 \(f\colon\bbR^{n}\to E\).
+
+\todo[inline]{More details}
 
 \subsection{Divergence theorem for the Bochner integral}%
 \label{sec:diverg-theor-bochn}
@@ -1144,8 +1155,8 @@ One possible direction of improvement would be to formalize the
 divergence theorem for (some of the) other integrals listed in the
 survey~\cite{BONGIORNO2002587}. Some of these theorems allow the
 function to be continuous, not differentiable, on a countable set of
-\emph{hyperplanes}. These theorems can be transfered to more general
-versions of the Cauchy-Goursat theorems.
+\emph{coordinate hyperplanes}. These theorems can be transfered to
+more general versions of the Cauchy-Goursat theorems.
 
 The main obstacle for this project is that I define \enquote{box}
 integrals in a non-extensible way, see \autoref{sec:filters}. So, to
@@ -1157,9 +1168,8 @@ one has to seriously refactor the definition.
 
 Most of the proofs discussed in \autoref{sec:appl-compl-analys} can be
 easily generalized to the case of a function
-\(f\colon \bbC^{n}\to E\). I mentor an undergraduate student who tries
-to generalize the Cauchy integral formula as a part of a course. The
-generalization will be done by summer.
+\(f\colon \bbC^{n}\to E\). I mentor a student who tries to generalize
+the Cauchy integral formula as a part of a course.
 
 \subsection{The Cauchy-Goursat theorem for any domain}\label{sec:cauchy-goursat-any}
 
@@ -1183,6 +1193,11 @@ proof of the fact that a polynomial vector field on \(\bbR^{2}\) has
 only finitely many limit cycles (i.e., isolated periodic solutions),
 at least in the case of hyperbolic singular points. The proof of this
 theorem heavily relies on the complex analysis.
+
+\subsection{Spectrum}%
+\label{sec:spectrum}
+
+TODO
 
 \bibliography{divthm}
 \end{document}
