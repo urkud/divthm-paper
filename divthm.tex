@@ -1,8 +1,8 @@
-\documentclass[a4paper,UKenglish,cleveref, autoref, thm-restate]{lipics-v2021}
+\documentclass[a4paper, UKenglish,cleveref, autoref, thm-restate]{lipics-v2021}
 
 \bibliographystyle{plainurl}% the mandatory bibstyle
 
-\author{Yury Kudryashov}{University of Toronto at Mississauga, Canada}{yury.kudriashov@utoronto.ca}{https://orcid.org/0000-0003-4286-9276}{}
+\author{Yury Kudryashov}{University of Toronto at Mississauga, Canada (till July 2022); Texas A\&M University (since August 2022)}{urkud@urkud.name}{https://orcid.org/0000-0003-4286-9276}{}
 % TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
 
 \authorrunning{Yu. Kudryashov} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
@@ -19,8 +19,8 @@
 \relatedversion{} %optional, e.g. full version hosted on arXiv, HAL, or other respository/website
 %\relatedversiondetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93]{Classification (e.g. Full Version, Extended Version, Previous Version}{URL to related version} %linktext and cite are optional
 
-%\supplement{}%optional, e.g. related research data, source code, ... hosted on a repository like zenodo, figshare, GitHub, ...
-%\supplementdetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93, subcategory={Description, Subcategory}, swhid={Software Heritage Identifier}]{General Classification (e.g. Software, Dataset, Model, ...)}{URL to related version} %linktext, cite, and subcategory are optional
+% \supplement{TODO}%optional, e.g. related research data, source code, ... hosted on a repository like zenodo, figshare, GitHub, ...
+\supplementdetails[linktext={Github wiki page}]{Documentation website}{https://github.com/leanprover-community/mathlib/wiki/Project:-formalization-of-the-divergence-theorem} %linktext, cite, and subcategory are optional
 
 %\funding{(Optional) general funding statement \dots}%optional, to capture a funding statement, which applies to all authors. Please enter author specific funding statements as fifth argument of the \author macro.
 
@@ -30,7 +30,9 @@
   of most of the code, and my wife Nataliya Goncharuk for constant
   support. I also want to thank Anne Baanen, Johan Commelin, Nataliya
   Goncharuk, and Robert Y. Lewis for valuable comments on the draft
-  versions of this paper.}%optional
+  versions of this paper and I thank my son Konstantin for finding
+  lots of typos. I am also grateful to the anonymous referees for
+  their valuable comments.}%optional
 
 % \nolinenumbers %uncomment to disable line numbering
 
@@ -65,17 +67,17 @@
 \newcommand{\mathlibref}[2]{\href{https://leanprover-community.github.io/mathlib_docs/find/#1}{#2}}
 
 %Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\EventEditors{John Q. Open and Joan R. Access}
+\EventEditors{June Andronick and Leonardo de Moura}
 \EventNoEds{2}
-\EventLongTitle{42nd Conference on Very Important Topics (CVIT 2016)}
-\EventShortTitle{CVIT 2016}
-\EventAcronym{CVIT}
-\EventYear{2016}
-\EventDate{December 24--27, 2016}
-\EventLocation{Little Whinging, United Kingdom}
+\EventLongTitle{13th International Conference on Interactive Theorem Proving (ITP 2022)}
+\EventShortTitle{ITP 2022}
+\EventAcronym{ITP}
+\EventYear{2022}
+\EventDate{August 7--10, 2022}
+\EventLocation{Haifa, Israel}
 \EventLogo{}
-\SeriesVolume{42}
-\ArticleNo{23}
+\SeriesVolume{237}
+\ArticleNo{31}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -96,7 +98,7 @@
 \end{abstract}
 
 \section{Introduction}\label{sec:introduction}
-The divergence theorem says that under certain assumptions, the
+The divergence theorem says that, under certain assumptions, the
 integral of the divergence of a vector field over a region is equal to
 the flow of this vector field through the boundary of the region. For
 a rectangular region on the plane, this can be written as
@@ -111,8 +113,8 @@ For continuously differentiable functions \(f\), \(g\), the equality
 immediately follows from the Fundamental Theorem of Calculus and the
 Fubini Theorem.
 
-If \(F\colon \bbC\to E\) is a complex differentiable function, then due
-to Cauchy-Riemann relations, the left hand side of Green's theorem
+If \(F\colon \bbC\to E\) is a complex differentiable function, then, due
+to Cauchy-Riemann relations, the left-hand side of Green's theorem
 applied to \(f(x, y)=F(x+iy)\) and \(g(x, y)=iF(x+iy)\) is zero, and
 we get
 \href{https://en.wikipedia.org/wiki/Cauchy's_integral_theorem}{Cauchy's
@@ -159,11 +161,11 @@ divergence theorem. Also, the assumptions in the Cauchy-Goursat
 theorem are slightly weaker than in most textbooks.
 
 The most similar other project is Abdulaziz and Paulson's
-formalization of the Green's theorem for a large class of domains in
-\(\bbR^{2}\) in Isabelle~\cite{Abdulaziz_Paulson}. Neither of these
-two theorems implies the other. Here are the key points where one of
-the formalizations is more general than the other, see also
-\autoref{sec:gener-diverg-theor}.
+formalization of Green's theorem for a large class of domains in
+\(\bbR^{2}\) in Isabelle~\cite{Abdulaziz_Paulson}. Neither Isabelle
+nor my version of the divergence theorem implies the other. Here are
+the key points where one of the formalizations is more general than
+the other, see also \autoref{sec:gener-diverg-theor}.
 
 \begin{description}
 \item[shape of the domain] The Isabelle formalization works with any
@@ -248,15 +250,16 @@ formalized the other one because it implies the Cauchy--Goursat theorem.
 
 \subsection{Fréchet differentiability}
 A function \(f\colon E_{1}\to E_{2}\) between normed vector spaces is
-called \emph{Fréchet differentiable} at a point \(x\) with derivative
-given by a continuous linear map \(f'\colon E_{1}\to E_{2}\) if
-\(f(x+y)=f(x)+f'(y)+o(y)\) as \(y\to 0\). A Fréchet differentiable
-function \(f\) has all partial derivatives and they are equal to the
-values of \(f'\) on the basis vectors.
+called \emph{Fréchet differentiable} at a point \(x\) with the
+derivative given by a continuous linear map
+\(f'\colon E_{1}\to E_{2}\) if \(f(x+y)=f(x)+f'(y)+o(y)\) as
+\(y\to 0\). A Fréchet differentiable function \(f\) has all partial
+derivatives and they are equal to the values of \(f'\) on the basis
+vectors.
 
 In 1981, Mawhin~\cite{Mawhin81} introduced a generalization of the
-Henstock-Kurzweil integral he called \emph{GP-integral} (probably from
-\emph{generalized Perron}). This integral allows us to prove the
+Henstock-Kurzweil integral he called the \emph{GP-integral} (probably
+from \emph{generalized Perron}). This integral allows us to prove the
 following theorem.
 
 \begin{theorem}%
@@ -300,7 +303,7 @@ not formalize these theorems (yet).
 While my main goal was to prove the divergence theorem for the Bochner
 integral, I first proved the divergence theorem for the GP-integral,
 see below. This integral is one of possible generalizations of the
-Henstock-Kurzweil integral to higher dimension. In this section I
+Henstock-Kurzweil integral to higher dimension. In this section, I
 state the relevant definitions and theorems.
 
 \subsection{Henstock-Kurzweil integral in dimension one}\label{sec:HK-integral-dim1}
@@ -346,7 +349,7 @@ Henstock-Kurzweil integral over a box in \lstinline+ℝ¹ = fin 1 → ℝ+.
 \subsection{Henstock-Kurzweil integral in higher dimension}%
 \label{sec:HK-integral-dim-n}
 
-We will need a few definitions to generalize Henstock-Kurzweil
+We will need a few definitions to generalize the Henstock-Kurzweil
 integral to functions \(f\colon \bbR^{n}\to E\).
 
 \begin{definition}
@@ -409,7 +412,7 @@ one suggested by Mawhin~\cite{Mawhin81}.
   number \(d\) there exists a gauge function
   \(\delta\colon \bbR^{n}\to \bbR_{>0}\) such that for any Henstock
   tagged partition \(\set{(J_{k}, \xi_{k})}\) of \(I\) that is
-  subordinate to \(\delta\) and has distortion less than \(d\), the
+  subordinate to \(\delta\) and has a distortion less than \(d\), the
   Riemann sum of \(f\) over this partition is \(\eps\)-close to \(c\).
 \end{definition}
 
@@ -428,7 +431,7 @@ generalization of the Lebesgue integral. It was introduced by Bochner
 in~\cite{Bochner1933IntegrationVF}, and it is also formalized in
 Coq~\cite{boldo2022coq} and Isabelle~\cite{Avigad17}.
 
-A~Bochner integrable function is McShane integrable (hence,
+A~Bochner integrable function is McShane integrable (hence
 Henstock-Kurzweil and GP integrable), thus \autoref{thm:divergence}
 holds for the Bochner integral if we assume that the divergence is
 Bochner integrable on the box. Taking the limit over an exhaustion of
@@ -479,7 +482,7 @@ The code below uses some notation that is specific either to
 \subsection{Boxes}\label{sec:boxes}
 
 I use open-closed boxes in \(\bbR^{n}\) as elements of partition
-because this way the boxes are disjoint as sets and cover the whole
+because, this way, the boxes are disjoint as sets and cover the whole
 ambient box, so one does not have to deal with interiors or closures
 to define a partition.
 
@@ -531,7 +534,7 @@ of \(I\).
 \subsection{Partitions}\label{sec:partitions}
 
 A \emph{partition} of a box \(I\) is a finite collection of pairwise
-disjoint boxes that cover \(I\). Sometimes it is useful to deal with a
+disjoint boxes that cover \(I\). Sometimes, it is useful to deal with a
 collection of pairwise disjoint boxes that cover only a part of \(I\),
 so I define a \emph{prepartition} of a box
 
@@ -647,8 +650,8 @@ def GP : integration_params :=
   bDistortion := tt }
 \end{lstlisting}
 
-On the one hand, this design choice allows me to prove some lemmas
-(e.g., Henstock-Sacks inequality, see \autoref{sec:henst-sacks-ineq})
+On one hand, this design choice allows me to prove some lemmas (e.g.,
+Henstock-Sacks inequality, see \autoref{sec:henst-sacks-ineq})
 uniformly for all these integrals. On the other hand, it is hard to
 add more integrals to the collection.
 
@@ -681,7 +684,7 @@ of the GP-integral. The last assumption is trivial if \(\pi\) is a
 partition (then we can choose \(\pi'\) to be the empty
 prepartition). One can show that it is also trivial whenever \(c>1\)
 but I decided to cut a corner here and introduce this assumption
-instead of adding an explicit assumption \(c>1\) here and there and of
+instead of adding an explicit assumption \(c>1\) here and there and
 proving one more lemma.
 
 The most important filter related to a set of integration parameters
@@ -797,22 +800,19 @@ integrals. However, I never used it for functions other than the
 volumes defined by measures, so possibly this generalization is a case
 of overengineering.
 
-\begin{lstlisting}[caption={Definition of the Riemann integral sum}]
+\begin{lstlisting}[caption={Definition of box-style integrals}]
 def integral_sum (f : ℝⁿ → E) (vol : ι →ᵇᵃ (E →L[ℝ] F))
   (π : tagged_prepartition I) : F :=
 ∑ J in π.boxes, vol J (f (π.tag J))
-\end{lstlisting}
-\begin{lstlisting}[caption={A predicate saying that $f$ has integral $y$ on $I$}]
+
 def has_integral (I : box n) (l : integration_params) (f : ℝⁿ → E)
   (vol : n →ᵇᵃ (E →L[ℝ] F)) (y : F) : Prop :=
 tendsto (integral_sum f vol) (l.to_filter_Union I ⊤) (𝓝 y)
-\end{lstlisting}
-\begin{lstlisting}[caption={A function is integrable if it has integral $y$ for some $y$}]
+
 def integrable (I : box n) (l : integration_params) (f : ℝⁿ → E)
   (vol : n →ᵇᵃ (E →L[ℝ] F)) :=
 ∃ y, has_integral I l f vol y
-\end{lstlisting}
-\begin{lstlisting}[caption={The integral of a function is a vector $y$ such that $f$ has integral $y$ if $f$ is integrable or zero otherwise}]
+
 def integral (I : box n) (l : integration_params) (f : ℝⁿ → E)
   (vol : n →ᵇᵃ (E →L[ℝ] F)) :=
 if h : integrable I l f vol then h.some else 0
@@ -989,7 +989,7 @@ lemma integral_divergence {n : ℕ} (a b : ℝⁿ⁺¹) (hle : a ≤ b) (f : ℝ
 
 The main goal of the project was to formalize a version of the
 divergence theorem that implies the Cauchy integral formula under
-standard assumptions. In this section I will briefly explain how I
+standard assumptions. In this section, I will briefly explain how I
 deduce the Cauchy integral formula from
 \autoref{thm:divergence-Bochner}. While many textbooks on complex
 analysis prove these formulas for functions \(f\colon \bbC\to \bbC\), I
@@ -1004,9 +1004,9 @@ plane~\(\bbC\). If \(f\colon \bbC\to E\) is continuous on \(R\) and is
 complex differentiable at all but countably many points of the
 interior of~\(R\), then one can apply the divergence theorem to the
 function \(F\colon \bbC \to E^{2}\) given by \(F(z)=(-if(z),
-f(z))\). Due to Cauchy-Riemann equations, the left hand side
+f(z))\). Due to Cauchy-Riemann equations, the left-hand side
 of~\eqref{eqn:green-rect} equals zero. It is easy to see that the
-right hand side is equal to the integral
+right-hand side is equal to the integral
 \(\int_{\partial R}f(z)\,dz\).
 
 \begin{lstlisting}[caption={The Cauchy-Goursat theorem for a rectangle},label=lst:cauchy-rect]
@@ -1048,10 +1048,10 @@ lemma cauchy_thm_annulus {c : ℂ} {r R : ℝ} (h0 : 0 < r)
 Next, I apply this theorem to the function \(\frac{f(z)}{z-c}\)
 (formally, \((z-c)^{-1}\cdot f(z)\) because \(f\) is a vector-valued
 function) and take the limit as \(r\) tends to \(0\) from the
-right. Thus I prove the Cauchy integral formula for the value of a
+right. Thus, I prove the Cauchy integral formula for the value of a
 complex differentiable function at the center of a disk. This theorem
-will be later generalized to any point of the disk but I will use this
-case to prove the general version.
+will be later generalized to any point of the disk, but I will use
+this case to prove the general version.
 
 \begin{lstlisting}[caption=Cauchy integral formula for the center of a disk,label=lst:cauchy-int-center]
 lemma cauchy_integral_disk_center {R : ℝ} (h0 : 0 < R)
@@ -1072,7 +1072,7 @@ lemma cauchy_thm_disk {R : ℝ} (h0 : 0 ≤ R) {f : ℂ → E}
   ∮ z in C(c, R), f z = 0 :=
 \end{lstlisting}
 
-Next I show the Cauchy integral formula
+Next, I show the Cauchy integral formula
 \[
   f(w)=\frac{1}{2\pi i}\oint_{|z-c|=R}\frac{f(z)}{z-w}\,dz
 \]
@@ -1087,7 +1087,7 @@ apply the Cauchy-Goursat theorem to the function
 \]
 If \(f\) is differentiable at \(w\), then \(g\) satisfies the
 assumptions of the previous theorem, hence the integrals of
-\(\frac{f(z)}{z-w}\) and of \(\frac{f(w)}{z-w}\) over the circle
+\(\frac{f(z)}{z-w}\) and \(\frac{f(w)}{z-w}\) over the circle
 \(|z-c|=R\) are equal. It is easy to see that the latter integral
 equals \(2\pi i f(w)\).
 
@@ -1175,8 +1175,8 @@ topological lemmas that are not in \texttt{mathlib} yet.
 
 Formalization of the Cauchy-Goursat theorem makes it possible to
 formalize many theorems from the one-dimensional complex analysis. I
-already formalized the removable singularity theorem but clearly this
-is just the beginning.
+already formalized the removable singularity theorem, but, clearly,
+this is just the beginning.
 
 My main goal for the next year or two is to formalize Ilyashenko's
 proof of the fact that a polynomial vector field on \(\bbR^{2}\) has
