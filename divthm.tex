@@ -94,8 +94,7 @@
   bootstrap complex analysis in the Lean mathematical library. The
   main tool is the GP-integral, a version of the Henstock-Kurzweil
   integral introduced by J. Mawhin in 1981. The divergence theorem for
-  this integral does not require any regularity assumptions on the
-  derivative of a vector field.
+  this integral does not require integrability of the divergence.
 \end{abstract}
 
 \section{Introduction}\label{sec:introduction}
@@ -991,10 +990,14 @@ lemma has_integral_GP_pderiv (f : ℝⁿ⁺¹ → E) (f' : ℝⁿ⁺¹ → ℝ�
   (Hs : ∀ x ∈ s, continuous_within_at f I.Icc x)
   (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
   (i : fin (n + 1)) :
-  has_integral I GP (λ x, f' x (e i)) dV
-    (integral (I.face i) GP (f ∘ I.front_face i) dV -
-      integral (I.face i) GP (f ∘ I.back_face i) dV)
+  has_integral I GP (λ x, f' x (e i)) volume
+    (integral (I.face i) GP (f ∘ I.front_face i) volume -
+      integral (I.face i) GP (f ∘ I.back_face i) volume)
 \end{lstlisting}
+
+Here and in the next listing, \(volume\) is a notation for the
+box-additive volume \lstinline=volume : (n + 1) →ᵇᵃ (E →L[ℝ] E)=
+defined by \lstinline+dV J x = (∏ j, J.upper j - J.lower j) • x+.
 
 The sum of these statements for all terms of the divergence gives us
 the divergence theorem.
@@ -1004,9 +1007,9 @@ lemma has_integral_GP_divergence (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
   (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹) (s : set ℝⁿ⁺¹) (hs : countable s)
   (Hs : ∀ x ∈ s, continuous_within_at f I.Icc x)
   (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x) :
-  has_integral I GP (λ x, ∑ i, f' x (e i) i) dV
-    (∑ i, (integral (I.face i) GP (f ∘ I.front_face i) dV -
-      integral (I.face i) GP (f ∘ I.back_face i) dV))
+  has_integral I GP (λ x, ∑ i, f' x (e i) i) volume
+    (∑ i, (integral (I.face i) GP (f ∘ I.front_face i) volume -
+      integral (I.face i) GP (f ∘ I.back_face i) volume))
 \end{lstlisting}
 
 The proof of the main lemma follows the same scheme as the standard
