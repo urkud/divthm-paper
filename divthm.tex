@@ -810,16 +810,16 @@ definition takes an argument of the type
 \lstinline=box n= and the top element \lstinline=⊤=.
 
 \begin{lstlisting}
-structure box_additive_map (n : ℕ) (M : Type*) [add_comm_monoid M]
+structure box_additive_map (n : ℕ) (G : Type*) [add_comm_group G]
   (I : with_top (box n)) : Type* :=
-(to_fun : box n → M)
+(to_fun : box n → G)
 (sum_partition_boxes' : ∀ J : box n, (J : with_top (box n)) ≤ I →
   ∀ π : prepartition J, π.is_partition →
     ∑ Ji in π.boxes, to_fun Ji = to_fun J)
 \end{lstlisting}
 
-I use notation \lstinline=n →ᵇᵃ M= for functions that are box-additive
-on the whole space and \lstinline=n →ᵇᵃ[I] M= for functions that are
+I use notation \lstinline=n →ᵇᵃ G= for functions that are box-additive
+on the whole space and \lstinline=n →ᵇᵃ[I] G= for functions that are
 box-additive on subboxes of \(I\).
 
 It suffices to verify additivity only on the two-box partitions
@@ -833,11 +833,11 @@ of \lstinline=split_many I t= is equal both to \(f(I)\) and to the sum
 of its values over all boxes of~\(\pi\).
 
 \begin{lstlisting}
-def of_map_split_add (f : box n → M) (I₀ : with_top (box n))
+def of_map_split_add (f : box n → G) (I₀ : with_top (box n))
   (hf : ∀ I : box n, (I : with_top (box n)) ≤ I₀ →
     ∀ {i x}, x ∈ Ioo (I.lower i) (I.upper i) →
     f (I.split_lower i x) + f (I.split_upper i x) = f I) :
-  n →ᵇᵃ[I₀] M
+  n →ᵇᵃ[I₀] G
 \end{lstlisting}
 
 Here \lstinline=I.split_lower i x= and \lstinline=I.split_upper i x=
