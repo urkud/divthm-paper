@@ -246,10 +246,19 @@ a vector field can be generalized to this case with no or little
 modifications. I deal with functions \(\bbR^{n}\to E^{n}\) right away.
 
 \subsection{Integrable partial derivatives}
-It is easy to see that the standard proof based on Fubini's theorem and
-FTC works for a function \(f\colon \bbR^{n}\to E^{n}\) such that the
-partial derivatives \(\frac{\partial f_{i}(x)}{\partial x_{i}}\) exist
-at all points of the box and are integrable on the whole box.
+It is easy to see that the standard proof based on Fubini's theorem
+and FTC works for a function \(f\colon \bbR^{n}\to E^{n}\) such that
+the partial derivatives \(\frac{\partial f^{i}(x)}{\partial x^{i}}\)
+exist at all points of the box and are integrable on the whole
+box.
+
+\begin{remark}
+  Here and below I use upper indices for coordinates of vectors to
+  disambiguate \(i\)-th coordinate of a vector from \(i\)-th element
+  in a sequence of vectors. I \textsw{do not assume} implicit
+  summation over indices that appear both as an upper and as a lower
+  index.
+\end{remark}
 
 Neither this generalization nor the next one imply each other. I
 formalized the other one because it implies the Cauchy--Goursat theorem.
@@ -276,15 +285,15 @@ following theorem.
   box \(\overline I=[a, b]\).
 
   Then for each \(i=1,\dots,n\), the partial derivative
-  \(\frac{\partial f}{\partial x_{i}}\) is GP-integrable on \(I\) and
+  \(\frac{\partial f}{\partial x^{i}}\) is GP-integrable on \(I\) and
   its integral is equal to the difference of the integrals of \(f\) over
-  the faces \(x_{i}=b_{i}\) and \(x_{i}=a_{i}\) of \(I\).
+  the faces \(x^{i}=b^{i}\) and \(x^{i}=a^{i}\) of \(I\).
 
   In particular, for a function \(f\colon \bbR^{n}\to E^{n}\), the
   divergence
   \begin{equation}
     \label{eq:divg}
-    \divg f=\sum_{i=1}^{n}\frac{\partial f_{i}}{\partial x_{i}}
+    \divg f=\sum_{i=1}^{n}\frac{\partial f^{i}}{\partial x^{i}}
   \end{equation}
   is GP-integrable on \(I\) and its integral is equal to the sum of
   integrals of \(f\) over the faces of \(I\) with appropriate signs.
@@ -371,14 +380,14 @@ integral to functions \(f\colon \bbR^{n}\to E\).
 \begin{definition}%
   \label{def:box-partition}
   For \(a, b \in \bbR^{n}\), the \emph{open box} \((a, b)\) is the
-  product of open intervals \((a_{i}, b_{i})\), that is
-  \((a, b)=\set{x\in\bbR^{n}|\forall i, x_{i}\in(a_{i}, b_{i})}\). The
+  product of open intervals \((a^{i}, b^{i})\), that is
+  \((a, b)=\set{x\in\bbR^{n}|\forall i, x^{i}\in(a^{i}, b^{i})}\). The
   \emph{open-closed box} \((a, b]\) and the \emph{closed box}
   \([a, b]\) are defined in a similar way.
 
   The \emph{distortion} (or \emph{irregularity}) \(\sigma(I)\) of an
   open-closed box \(I=(a, b]\) is the maximum of the ratios
-  \(\frac{b_{i}-a_{i}}{b_{j}-a_{j}}\) over all \(i, j\).
+  \(\frac{b^{i}-a^{i}}{b^{j}-a^{j}}\) over all \(i, j\).
 
   A \emph{partition} of an open-closed box \(I=(a, b]\) is a finite
   collection of pairwise disjoint boxes \(J_{k}=(a_{k}, b_{k}]\) that
@@ -477,8 +486,8 @@ divergence theorem for Bochner integral.
   \(\divg f\) defined by~\eqref{eq:divg} is Bochner integrable on
   \(I\). Then its integral is equal to the sum of integrals of \(f\)
   over the faces of \(\overline I\) taken with appropriate signs (plus
-  for the integral over a front face \(x_{i}=b_{i}\) and minus for the
-  integral over a back face \(x_{i}=a_{i}\)).
+  for the integral over a front face \(x^{i}=b^{i}\) and minus for the
+  integral over a back face \(x^{i}=a^{i}\)).
 \end{theorem}
 
 \section{Divergence theorem: design choices and implementation details}%
@@ -853,7 +862,7 @@ function on subboxes of \(I\), see \autoref{sec:henst-sacks-ineq}.
 
 One more construction of box-additive functions appears in the proof
 of the divergence theorem. Given a box-additive function \(f_{y}\) on
-each cross-section \(x_{i}=y\), \(y \in [a_{i}, b_{i}]\) of a closed
+each cross-section \(x^{i}=y\), \(y \in [a^{i}, b^{i}]\) of a closed
 box \lstinline~I₀.Icc = [a, b]~, the function given by
 \lstinline~g J = f (J.upper i) (J.face i) - f (J.lower i) (J.face i)~
 is box additive on subboxes of~\(I_{0}\).
@@ -1009,7 +1018,7 @@ estimate \(f(y)=f(x)+f'(x)(y-x)+o(y-x)\) and \(\Sigma(\pi)\le c\)
 imply that the difference between the integrals of
 \(f\) over the \(i\)-th front and back faces of a \(\delta(x)\)-small
 box \(J\ni x\) is \(\eps V(J)\)-close to the term
-\(\frac{\partial f}{\partial x_{i}}V(J)\) of the Riemann sum for the
+\(\frac{\partial f}{\partial x^{i}}V(J)\) of the Riemann sum for the
 integral of the partial derivative.
 
 I do one modification to this argument that allows me to use weaker
@@ -1062,7 +1071,7 @@ lemma aux (I : box (n + 1)) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
 I slightly generalize this result. First, I drop the differentiability
 assumption on the boundary of~\(I\). To do this, I apply the auxiliary
 result to an increasing sequence of subboxes that cover the interior
-of \(I\). Second, I allow \(a_{i}=b_{i}\); in this case both sides are
+of \(I\). Second, I allow \(a^{i}=b^{i}\); in this case both sides are
 equal to zero.
 
 \begin{lstlisting}[caption={The divergence theorem for the Bochner integral},label=lst:divergence-bochner]
