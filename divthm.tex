@@ -82,7 +82,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
-\sloppy
 \maketitle
 
 \begin{abstract}
@@ -207,7 +206,7 @@ changed some names (the \texttt{mathlib} naming convention sometimes
 leads to very long names) and notation in the code listings below.
 
 As in most parts of \texttt{mathlib} (and all of its analysis
-library), I do not try to avoid the axiom of choice.
+library), I do not avoid the axiom of choice.
 
 \subsection{Structure of the paper}%
 \label{sec:structure-paper}
@@ -578,6 +577,19 @@ a collection of pairwise disjoint boxes that cover only a part of
 saying that a prepartition is actually a partition, see
 \autoref{lst:prepartition}.
 
+I do not use two separate structures \lstinline=prepartition= and
+\lstinline=partition= because with my approach I can define a function
+of prepartitions (e.g., the Riemann integral sum), then prove
+statements about its limits along various filters; some of these
+filters require a prepartition to be a partition, some do not. Also, I
+can define operations on prepartitions, then freely mix partitions and
+prepartitions in the arguments instead of adding an explicit
+\lstinline=to_prepartition= or an implicit coercion here and there.
+On the other hand, I have to use
+\lstinline=(π : prepartion I) (hπ : is_partition π)= instead of
+\lstinline=(π : partition I)= whenever I want to argue about a
+partition.
+
 \begin{lstlisting}[caption={Definition of a (pre)partition}, label=lst:prepartition]
 structure prepartition (I : box n) : Type :=
 (boxes : finset (box n))
@@ -587,8 +599,6 @@ structure prepartition (I : box n) : Type :=
 def is_partition (π : prepartition I) : Prop :=
 ∀ x ∈ I, ∃ J ∈ π, x ∈ J
 \end{lstlisting}
-
-h\todo[inline]{why is prepartition a structure, but is partition a predicate}
 
 Then I establish basic API about (pre)partitions, most notably the
 following predicates, relations, and operations.
@@ -1068,7 +1078,59 @@ The proof follows R.~Gordon's book~\cite{Gordon55}, with some
 modifications required to generalize it from a function
 \(f\colon\bbR\to\bbR\) to a function \(f\colon\bbR^{n}\to E\).
 
-\todo[inline]{More details}
+First, I prove that the indicator function of a measurable set~\(s\)
+is McShane integrable with respect to the volume defined by a locally
+finite measure~\(\mu\), see \autoref{lst:McShane-indicator}, with the
+integral equal to the measure of this set. To prove this, I choose a
+closed subset~\(F\subset s\) and an open superset \(U\supset s\) such
+that \(\mu(U\setminus F)\) is small, then choose a gauge function
+\(\delta(x)\) so that the closed ball with center \(x\) and radius
+\(\delta(x)\) is included in \(U\) whenever \(x\in s\) and is disjoint
+with \(F\) otherwise.
+
+\begin{lstlisting}[caption=Integral of the indicator function of a measurable set,label=lst:McShane-indicator]
+lemma has_integral_indicator_const (l : integration_params) (hl : l.bRiemann = ff)
+  {s : set ℝⁿ} (hs : measurable_set s) (I : box n) (y : E)
+  (μ : measure ℝⁿ) [is_locally_finite_measure μ] :
+  has_integral I l (s.indicator (λ _, y)) μ.to_box_additive.to_smul
+    ((μ (s ∩ I)).to_real • y) :=
+\end{lstlisting}
+
+Then I show that a function \(f\colon\bbR^{n}\to E\) that is
+a.e.~equal to zero is McShane integrable with integral zero, see
+\autoref{lst:McShane-ae-zero}. To prove this lemma, I cover each set
+\(\set{x|n<\|f(x)\|\le n+1}\) by an open set \(U_{n}\) of measure less
+than \(\frac{\eps}{2^{n+1}(n+1)}\). Then I choose a gauge
+function~\(\delta\) so that each closed ball with center \(x\) and
+radius \(\delta(x)\) is included in \(U_{\lceil\|f(x)\|\rceil}\). Then
+the Riemann integral sum is at most \(\eps\), which completes the
+proof.
+
+\begin{lstlisting}[caption=An a.e.-null function has integral zero,label=lst:McShane-ae-zero]
+lemma has_integral_zero_of_ae_eq_zero {l : integration_params} {I : box n} {f : ℝⁿ → E}
+  {μ : measure ℝⁿ} [is_locally_finite_measure μ] (hf : f =ᵐ[μ.restrict I] 0)
+  (hl : l.bRiemann = ff) :
+  has_integral I l f μ.to_box_additive.to_smul 0 :=
+\end{lstlisting}
+
+Integrability of the indicator function of a measurable set
+immediately implies integrability of a simple function. In order to
+prove integrability of any Bochner integrable function, we need to
+consider a.e.-limits of simple functions too. First, I replace the
+function by a measurable function by changing its values on a set of
+measure zero. Next, I choose a sequence of simple functions~\(f_{n}\)
+that approximate our function~\(g\) and has some nice properties
+(e.g., \(\|f_{n}(x)-g(x)\|\) is decreasing and tends to zero for any
+\(x\)). Then I take \(\eps>0\), choose \(N\) such that
+\(\int_{I}\|f_{N}(x)-g(x)\|\,\partial\mu<\eps\), and for each \(x\) I
+choose \(N_{x}\ge N\) such that \(\|f_{N_{x}}(x)-g(x)\|<\eps\). Let
+\(\delta_{n}\) be a gauge function such that the integral sum for
+\(f_{n}\) over a tagged partition subordinate to \(\delta_{n}\) is
+\(\frac{\eps}{2^{n+1}}\)-close to the integral of \(f_{n}\). I show
+that for the gauge function \(\delta(x)=\delta_{N_{x}}(x)\), the
+integral sum for \(g\) over a tagged partition subordinate to
+\(\delta\) is \(\eps(\mu(I)+2)\)-close to the Bochner integral
+of~\(g\).
 
 \subsection{Divergence theorem for the Bochner integral}%
 \label{sec:diverg-theor-bochn}
