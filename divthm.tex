@@ -177,17 +177,21 @@ the other, see also \autoref{sec:gener-diverg-theor}.
 \item[differentiability] The Isabelle formalization only requires
   existence of the partial derivatives while I require Fréchet
   differentiability of the original function;
-\item[regularity of the derivative] The Isabelle formalization requires
-  integrability of each partial derivative while my formalization
-  makes no regularity assumptions for the GP-integral and assumes only
-  integrability of the divergence for the Henstock-Kurzweil and
-  Bochner integrals;
+\item[regularity of the derivative] The Isabelle formalization
+  requires integrability of each partial derivative while my
+  formalization makes no regularity assumptions for the GP-integral
+  and assumes only integrability of the divergence for the
+  Henstock-Kurzweil and Bochner integrals; this makes it possible
+  deduce the Cauchy-Goursat theorem from my version of the divergence
+  theorem;
 \item[domain dimension] The Isabelle formalization only deals with
   dimension two while I formalize the divergence theorem in any finite
-  dimension;
+  dimension; this generalization is needed throughout differential
+  topology, PDE theory and mathematical physics;
 \item[codomain dimension] The Isabelle formalization only works for
   finite dimensional codomain while my formalization works for any
-  Banach space.
+  Banach space; this is needed, for example, in spectral theory for
+  the resolvent.
 \end{description}
 
 The complex analysis part of the project does not try to compete with
@@ -202,7 +206,8 @@ Lean~\cite{10.1007/978-3-319-21401-6_26} mathematical library
 changed some names (the \texttt{mathlib} naming convention sometimes
 leads to very long names) and notation in the code listings below.
 
-\todo[inline]{A few words about the axiom of choice.}
+As in most parts of \texttt{mathlib} (and all of its analysis
+library), I do not try to avoid the axiom of choice.
 
 \subsection{Structure of the paper}%
 \label{sec:structure-paper}
@@ -513,19 +518,19 @@ The code below uses some notation that is specific either to
 
 \subsection{Boxes}\label{sec:boxes}
 
-I use open-closed boxes in \(\bbR^{n}\) as elements of partition
-because, this way, the boxes are disjoint as sets and cover the whole
-ambient box, so one does not have to deal with interiors or closures
-to define a partition.
+I use open-closed boxes in \(\bbR^{n}\), see \autoref{lst:box}, as
+elements of partition because, this way, the boxes are disjoint as
+sets and cover the whole ambient box, so one does not have to deal
+with interiors or closures to define a partition.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Definition of a box}, label=lst:box]
 structure box (n : ℕ) : Type :=
 (lower upper : ℝⁿ)
 (lower_lt_upper : ∀ i, lower i < upper i)
 \end{lstlisting}
 
-Each box can be interpreted as a set in \(\bbR^{n}\).
-\begin{lstlisting}
+Each box can be interpreted as a set in \(\bbR^{n}\), see \autoref{lst:box-set}.
+\begin{lstlisting}[caption={Box as a set}, label=lst:box-set]
 instance : has_mem (ℝⁿ) (box n) :=
 ⟨λ x I, ∀ i, x i ∈ Ioc (I.lower i) (I.upper i)⟩
 
@@ -567,23 +572,23 @@ of \(I\).
 \subsection{Partitions}\label{sec:partitions}
 
 A \emph{partition} of a box \(I\) is a finite collection of pairwise
-disjoint boxes that cover \(I\). Sometimes, it is useful to deal with a
-collection of pairwise disjoint boxes that cover only a part of \(I\),
-so I define a \emph{prepartition} of a box
+disjoint boxes that cover \(I\). Sometimes, it is useful to deal with
+a collection of pairwise disjoint boxes that cover only a part of
+\(I\), so I define a \emph{prepartition} of a box and a predicate
+saying that a prepartition is actually a partition, see
+\autoref{lst:prepartition}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Definition of a (pre)partition}, label=lst:prepartition]
 structure prepartition (I : box n) : Type :=
 (boxes : finset (box n))
 (le_of_mem' : ∀ J ∈ boxes, J ≤ I)
 (pairwise_disjoint : pairwise boxes (disjoint on (coe : box n → set ℝⁿ)))
-\end{lstlisting}
 
-and a predicate saying that a prepartition is actually a partition
-
-\begin{lstlisting}
 def is_partition (π : prepartition I) : Prop :=
 ∀ x ∈ I, ∃ J ∈ π, x ∈ J
 \end{lstlisting}
+
+h\todo[inline]{why is prepartition a structure, but is partition a predicate}
 
 Then I establish basic API about (pre)partitions, most notably the
 following predicates, relations, and operations.
@@ -604,11 +609,12 @@ following predicates, relations, and operations.
 
 Recall that a \emph{tagged (pre)partition} is a (pre)partition~\(\pi\)
 with a point (\enquote{tag}) chosen in each box of~\(\pi\). In the
-formal definition, I require that the \lstinline=tag= function is
-defined on all boxes. This way I can write \lstinline=π.tag J= without
-proving that \(J\) is one of the boxes of \(\pi\).
+formal definition, see \autoref{lst:tagged-partition}, I require that
+the \lstinline=tag= function is defined on all boxes. This way I can
+write \lstinline=π.tag J= without proving that \(J\) is one of the
+boxes of \(\pi\).
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Definition of a tagged (pre)partition}, label=lst:tagged-partition]
 structure tagged_prepartition (I : box n) extends prepartition I :=
 (tag : box n → ℝⁿ)
 (tag_mem_Icc : ∀ J, tag J ∈ I.Icc)
@@ -629,9 +635,9 @@ this tedious work will be automized in a future version of Lean or
 mathlib.
 
 There are a few new definitions about tagged prepartitions that
-essentially use the tags, see \autoref{def:box-partition}.
+essentially use the tags, see \cref{def:box-partition,lst:Henstock}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Henstock tagged (pre)partitions and (pre)partitions subordinate to a gauge function},label=lst:Henstock]
 def is_Henstock (π : tagged_prepartition I) : Prop :=
 ∀ J ∈ π, π.tag J ∈ J.Icc
 
@@ -650,9 +656,9 @@ any function.
 
 I prove two versions of this lemma. First I prove the lemma as stated
 in the previous paragraph with an additional assertion that all boxes
-of the partition are homothetic to the original box.
+of the partition are homothetic to the original box, see \autoref{lst:cousin-box}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Cousin's lemma for a box},label=lst:cousin-box]
 lemma exists_subordinate_Henstock (I : box n) (r : ℝⁿ → ℝ>0) :
   ∃ π : tagged_prepartition I, π.is_partition ∧ π.is_Henstock ∧
     π.is_subordinate r ∧
@@ -677,12 +683,13 @@ Then I use it to prove that for any prepartition \(\pi\) there exists
 a refinement of this prepartition with the same distortion, see
 \autoref{def:GP-integral}, and a choice of tags such that the
 resulting tagged prepartition is Henstock and is subordinate to a
-given gauge function. To prove this, I apply the previous lemma to
-each box of \(\pi\), then merge these partitions using
-\lstinline=prepartition.bUnion=. I use this version of Cousin's lemma
-to prove that the GP-integral is well defined.
+given gauge function, see \autoref{lst:cousin-partition}. To prove
+this, I apply the previous lemma to each box of \(\pi\), then merge
+these partitions using \lstinline=prepartition.bUnion=. I use this
+version of Cousin's lemma to prove that the GP-integral is well
+defined.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Cousin's lemma for a prepartition},label=lst:cousin-partition]
 lemma exists_le_Henstock_Union_eq (r : ℝⁿ → ℝ>0) (π : prepartition I) :
   ∃ π' : tagged_prepartition I, π'.to_prepartition ≤ π ∧
     π'.is_Henstock ∧ π'.is_subordinate r ∧ π'.distortion = π.distortion ∧
@@ -695,10 +702,11 @@ Different “box” integrals (Riemann, McShane, Henstock-Kurzweil, GP)
 are defined as the limits of the Riemann sums along some filters on
 the space of partitions of a box.
 
-I define the following structure that holds data needed to define
+I define the structure \lstinline=integration_params=, see
+\autoref{lst:integration-params} that holds data needed to define
 either of these four integrals and a few more.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Structure holding parameters needed to define a box integral},label=lst:integration-params]
 structure integration_params : Type :=
 (bRiemann bHenstock bDistortion : bool)
 \end{lstlisting}
@@ -712,9 +720,11 @@ The parameters have the following meaning:
   \lstinline=bDistortion=&the gauge function may depend on the distortion of a partition.
 \end{tabular}
 
-E.g., the following integration parameters are used to define the
-Riemann, Henstock-Kurzweil, McShane, and GP-integrals.
-\begin{lstlisting}
+The integration parameters used to define the Riemann,
+Henstock-Kurzweil, McShane, and GP-integrals are listed in
+\cref{lst:well-known-params}.
+
+\begin{lstlisting}[caption={Parameters corresponding to well-known integrals},label=lst:well-known-params]
 def Riemann : integration_params :=
 { bRiemann := tt,
   bHenstock := tt,
@@ -743,21 +753,22 @@ add more integrals to the collection, see Bongiorno's
 survey~\cite{BONGIORNO2002587} for other reasonable generalizations of
 the Henstock-Kurzweil integral to higher dimension.
 
-I require that the gauge function satisfies the following
-condition. If \lstinline=l.bRiemann= is false, then this condition is
-trivial, otherwise it says that the gauge function is actually a
-constant function.
+I require that the gauge function satisfies the following condition,
+see \autoref{lst:r-cond}. If \lstinline=l.bRiemann= is false, then
+this condition is trivial, otherwise it says that the gauge function
+is actually a constant function.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Condition on the gauge function},label=lst:r-cond]
 def r_cond {n : ℕ} (l : integration_params) (r : ℝⁿ → ℝ>0) : Prop :=
 l.bRiemann → ∀ x, r x = r 0
 \end{lstlisting}
 
 For each set of parameters \lstinline=l : integration_params= and a
 box~\(I\), we define several filters on the space of prepartitions of
-\(I\). All these filters have basis sets of the same type.
+\(I\). All these filters have basis sets of the same type, see
+\autoref{lst:mem-base-set}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Basis sets used to define filters related to integration parameters.},label=lst:mem-base-set]
 structure mem_base_set (l : integration_params) (I : box n) (c : ℝ≥0)
   (r : ℝⁿ → ℝ>0) (π : tagged_prepartition I) : Prop :=
 (is_subordinate : π.is_subordinate r)
@@ -780,9 +791,9 @@ is the filter \lstinline=to_filter_Union= below. Cousin's lemma from
 \autoref{sec:cousins-lemma} implies that this filter is
 nontrivial. The actual definition uses more intermediate filters but
 the result is equal (though not definitionally equal) to the code in
-the listing below.
+\autoref{lst:filters}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption=Filters defined by a set of integration parameters and a box,label=lst:filters]
 def to_filter (l : integration_params) (I : box n) :
   filter (tagged_prepartition I) :=
 ⨆ c : ℝ≥0, ⨅ (r : ℝⁿ → ℝ>0) (hr : l.r_cond r),
@@ -812,12 +823,12 @@ I introduce the following definition.
 \end{definition}
 
 In order to deal with these two notions simultaneously, the actual
-definition takes an argument of the type
-\lstinline=with_top (box n)=. Similarly to the type
+definition takes an argument of the type \lstinline=with_top (box n)=,
+see \autoref{lst:box-additive}. Similarly to the type
 \lstinline=with_bot (box n)=, this type is the disjoint union of
 \lstinline=box n= and the top element \lstinline=⊤=.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Definition of a box-additive map},label=lst:box-additive]
 structure box_additive_map (n : ℕ) (G : Type*) [add_comm_group G]
   (I : with_top (box n)) : Type* :=
 (to_fun : box n → G)
@@ -831,16 +842,17 @@ on the whole space and \lstinline=n →ᵇᵃ[I] G= for functions that are
 box-additive on subboxes of \(I\).
 
 It suffices to verify additivity only on the two-box partitions
-\lstinline=split= introduced above. Indeed, let \(t\) be the set of
-all hyperplanes that contain faces of a partition~\(\pi\) of
-\(I\). Then the partition \lstinline=split_many I t= can be obtained
-by a series of splits along a single hyperplane both from the trivial
-one-box partition and from~\(\pi\). Therefore, if \(f\) is additive on
-the two-box partitions, then the sum of values of \(f\) over all boxes
-of \lstinline=split_many I t= is equal both to \(f(I)\) and to the sum
-of its values over all boxes of~\(\pi\).
+\lstinline=split= introduced above, see
+\autoref{lst:of-map-split-add}. Indeed, let \(t\) be the set of all
+hyperplanes that contain faces of a partition~\(\pi\) of \(I\). Then
+the partition \lstinline=split_many I t= can be obtained by a series
+of splits along a single hyperplane both from the trivial one-box
+partition and from~\(\pi\). Therefore, if \(f\) is additive on the
+two-box partitions, then the sum of values of \(f\) over all boxes of
+\lstinline=split_many I t= is equal both to \(f(I)\) and to the sum of
+its values over all boxes of~\(\pi\).
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={A map additive on splits by a hyperplane is a box-additive map},label=lst:of-map-split-add]
 def of_map_split_add (f : box n → G) (I₀ : with_top (box n))
   (hf : ∀ I : box n, (I : with_top (box n)) ≤ I₀ →
     ∀ {i x}, x ∈ Ioo (I.lower i) (I.upper i) →
@@ -868,9 +880,10 @@ is box additive on subboxes of~\(I_{0}\).
 
 To ensure nice definitional equality properties of the result, the
 actual definition involves two functions and a proof that they are
-equal on all the boxes relevant to the definition.
+equal on all the boxes relevant to the definition, see
+\autoref{lst:upper-sub-lower}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Difference of values of a box-additive map on the front and back faces of a box is a box-additive map},label=lst:upper-sub-lower]
 def upper_sub_lower {G : Type u} [add_comm_group G]
   (I₀ : box (n + 1)) (i : fin (n + 1)) (f : ℝ → box n → G)
   (fb : Icc (I₀.lower i) (I₀.upper i) → n →ᵇᵃ[I₀.face i] G)
@@ -887,7 +900,8 @@ open-closed box \(I\) in the sense of integration parameters \(l\) is
 defined as the limit of the Riemann sum over a partition \(\pi\) of
 \(I\) along the filter \lstinline=l.to_filter_Union ⊤=, where
 \lstinline=⊤= is the one-box partition of~\(I\). If the limit does not
-exist, then the integral is defined to be zero.
+exist, then the integral is defined to be zero, see
+\autoref{lst:box-integral}.
 
 I define the integral of a function \(f\colon \bbR^{n}\to E\) with
 respect to a box-additive volume taking values in the space of
@@ -897,7 +911,7 @@ However, I only used this definition in the case \(E=F\) and
 \lstinline+vol J x = (μ J).to_real • x+ for some measure \(\mu\). So,
 this generalization might be a case of overengineering.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Definition of a box integral},label=lst:box-integral]
 def integral_sum (f : ℝⁿ → E) (vol : n →ᵇᵃ (E →L[ℝ] F))
   (π : tagged_prepartition I) : F :=
 ∑ J in π.boxes, vol J (f (π.tag J))
@@ -938,12 +952,8 @@ on subboxes of \(I\). I prove several versions of this inequality for
 any of the \enquote{box} integrals.
 
 Instead of using predicate assumptions on \(\delta\), I define
-\begin{lstlisting}
-def convergence_r (h : integrable I l f vol) (ε : ℝ) (c : ℝ≥0) :
-  ℝⁿ → ℝ>0
-\end{lstlisting}
-to be a function \(\delta\colon\mathbb R^{n}\to\mathbb R_{>0}\) such
-that
+\lstinline=convergence_r= (see \autoref{lst:conv-r}) to be a function
+\(\delta\colon\mathbb R^{n}\to\mathbb R_{>0}\) such that
 \begin{itemize}
 \item if \lstinline=l.bRiemann=, then \(\delta\) is a constant;
 \item if \(\eps > 0\), then for any tagged partition \(\pi\) of \(I\)
@@ -952,10 +962,15 @@ that
   \(f\) over \(I\) by at most~\(\eps\).
 \end{itemize}
 
+\begin{lstlisting}[caption={Gauge function that provides a witness of integrability},label=lst:conv-r]
+def convergence_r (h : integrable I l f vol) (ε : ℝ) (c : ℝ≥0) :
+  ℝⁿ → ℝ>0
+\end{lstlisting}
+
 Let me quote two versions of the Henstock-Sacks inequality here. One
 version compares the Riemann sums of a function over two prepartitions
-that cover the same part of the box.
-\begin{lstlisting}
+that cover the same part of the box, see \autoref{lst:henstock-sacks}.
+\begin{lstlisting}[caption={Henstock-Sacks inequality for two integral sums},label=lst:henstock-sacks]
 lemma dist_integral_sum_le_of_mem_base_set (h : integrable I l f vol)
   (hpos₁ : 0 < ε₁) (hpos₂ : 0 < ε₂)
   (hπ₁ : l.mem_base_set I c₁ (h.convergence_r ε₁ c₁) π₁)
@@ -965,9 +980,10 @@ lemma dist_integral_sum_le_of_mem_base_set (h : integrable I l f vol)
 \end{lstlisting}
 
 The other replaces one of these Riemann sums with the sum of integrals
-of the function over the boxes of the partition.
+of the function over the boxes of the partition, see
+\autoref{lst:henstock-sacks2}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Henstock-Sacks inequality on the distance between an integral sum and a sum of integrals},label=lst:henstock-sacks2]
 lemma dist_integral_sum_sum_integral_le_of_mem_base_set_of_Union_eq
   (h : integrable I l f vol) (hpos : 0 < ε)
   (hπ : l.mem_base_set I c (h.convergence_r ε c) π)
@@ -982,9 +998,9 @@ To prove the divergence theorem for the GP-integral
 \autoref{thm:divergence}, we prove that each partial derivative is
 GP-integrable with the integral equal to the difference of the
 integral of the original function over the front and back faces of the
-box.
+box, see \autoref{lst:GP-pderiv}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Key lemma for the divergence theorem for the GP-integral},label=lst:GP-pderiv]
 lemma has_integral_GP_pderiv (f : ℝⁿ⁺¹ → E) (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] E)
   (s : set (ℝⁿ⁺¹)) (hs : countable s)
   (Hs : ∀ x ∈ s, continuous_within_at f I.Icc x)
@@ -1000,7 +1016,7 @@ box-additive volume \lstinline=volume : (n + 1) →ᵇᵃ (E →L[ℝ] E)=
 defined by \lstinline+dV J x = (∏ j, J.upper j - J.lower j) • x+.
 
 The sum of these statements for all terms of the divergence gives us
-the divergence theorem.
+the divergence theorem, see \autoref{lst:divergence-GP}.
 
 \begin{lstlisting}[caption={The divergence theorem for the GP-integral},label=lst:divergence-GP]
 lemma has_integral_GP_divergence (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
@@ -1038,9 +1054,10 @@ In order to transfer the result from the GP-integral to the Bochner
 integral, I prove that any Bochner integrable function is integrable
 in the sense of any box integral with \lstinline~bRiemann = ff~. In
 other words, a Bochner integrable function is integrable in the sense
-of the McShane, Henstock-Kurzweil, and GP-integrals.
+of the McShane, Henstock-Kurzweil, and GP-integrals, see
+\autoref{lst:bochner-imp-McShane}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption=Bochner integrability implies box integrability,label=lst:bochner-imp-McShane]
 lemma integrable_on.has_box_integral {f : ℝⁿ → E} {μ : measure ℝⁿ}
   [is_locally_finite_measure μ] {I : box n} (hf : integrable_on f I μ)
   (l : integration_params) (hl : l.bRiemann = ff) :
@@ -1057,10 +1074,13 @@ modifications required to generalize it from a function
 \label{sec:diverg-theor-bochn}
 
 Since any Bochner integrable function is GP-integrable, we immediately
-obtain the following result for the Bochner integral.
+obtain the divergence theorem for the Bochner integral under
+assumptions that the function is continuous on a closed box, is
+differentiable at all but countably many points of this box, and has
+integrable divergence, see \autoref{lst:divergence-bochner-prelim}.
 
-\begin{lstlisting}
-lemma aux (I : box (n + 1)) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
+\begin{lstlisting}[caption={The divergence theorem for the Bochner integral, preliminary version},label=lst:divergence-bochner-prelim]
+lemma integral_divergence_aux (I : box (n + 1)) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
   (f' : ℝⁿ⁺¹ → ℝⁿ⁺¹ →L[ℝ] Eⁿ⁺¹) (s : set ℝⁿ⁺¹) (hs : countable s)
   (Hc : continuous_on f I.Icc)
   (Hd : ∀ x ∈ I.Icc \ s, has_fderiv_within_at f (f' x) I.Icc x)
@@ -1071,7 +1091,8 @@ lemma aux (I : box (n + 1)) (f : ℝⁿ⁺¹ → Eⁿ⁺¹)
         ∫ x in (I.face i).Icc, f (I.back_face i x) i)
 \end{lstlisting}
 
-I slightly generalize this result. First, I drop the differentiability
+I slightly generalize this result, see
+\autoref{lst:divergence-bochner}. First, I drop the differentiability
 assumption on the boundary of~\(I\). To do this, I apply the auxiliary
 result to an increasing sequence of subboxes that cover the interior
 of \(I\). Second, I allow \(a^{i}=b^{i}\); in this case both sides are
@@ -1112,7 +1133,8 @@ function \(F\colon \bbC \to E^{2}\) given by \(F(z)=(-if(z),
 f(z))\). Due to Cauchy-Riemann equations, the left-hand side
 of~\eqref{eqn:green-rect} equals zero. It is easy to see that the
 right-hand side is equal to the integral
-\(\int_{\partial R}f(z)\,dz\).
+\(\int_{\partial R}f(z)\,dz\). Thus we have the Cauchy-Goursat theorem
+for a rectangular domain, see \autoref{lst:cauchy-rect}.
 
 \begin{lstlisting}[caption={The Cauchy-Goursat theorem for a rectangle},label=lst:cauchy-rect]
 lemma cauchy_theorem_rect (f : ℂ → E) (z w : ℂ)
@@ -1128,9 +1150,10 @@ lemma cauchy_theorem_rect (f : ℂ → E) (z w : ℂ)
 
 To formulate the Cauchy-Goursat theorem for an annulus and a circle, I
 define the circle integral \(\oint_{|z-c|=R}f(z)\,dz\) as
-\(\int_{0}^{2\pi}(c+Re^{\theta i})'f(c+Re^{\theta i})\,d\theta\).
+\(\int_{0}^{2\pi}(c+Re^{\theta i})'f(c+Re^{\theta i})\,d\theta\), see
+\autoref{lst:circle-integral}.
 
-\begin{lstlisting}[caption=Definition of the circle integral \(\oint_{|z-c|=R}f(z)\,dz\)]
+\begin{lstlisting}[caption=Definition of the circle integral \(\oint_{|z-c|=R}f(z)\,dz\),label=lst:circle-integral]
 def circle_map (c : ℂ) (R : ℝ) : ℝ → ℂ := λ θ, c + R * exp (θ * 𝑖)
 
 def circle_integral (f : ℂ → E) (c : ℂ) (R : ℝ) : E :=
@@ -1140,7 +1163,7 @@ def circle_integral (f : ℂ → E) (c : ℂ) (R : ℝ) : E :=
 Applying the Cauchy-Goursat theorem for a rectangle to the function
 \(F(z)=e^{z}f(c+e^{z})\) on the rectangle \(\ln r\le \Re z\le \ln R\),
 \(0\le \Im z\le 2\pi\), I prove the Cauchy-Goursat theorem for a
-function differentiable on an annulus.
+function differentiable on an annulus, see \autoref{lst:cauchy-annulus}.
 
 \begin{lstlisting}[caption=The Cauchy-Goursat theorem for an annulus,label=lst:cauchy-annulus]
 lemma cauchy_thm_annulus {c : ℂ} {r R : ℝ} (h0 : 0 < r)
@@ -1154,9 +1177,10 @@ Next, I apply this theorem to the function \(\frac{f(z)}{z-c}\)
 (formally, \((z-c)^{-1}\cdot f(z)\) because \(f\) is a vector-valued
 function) and take the limit as \(r\) tends to \(0\) from the
 right. Thus, I prove the Cauchy integral formula for the value of a
-complex differentiable function at the center of a disk. This theorem
-will be later generalized to any point of the disk, but I will use
-this case to prove the general version.
+complex differentiable function at the center of a disk, see
+\autoref{lst:cauchy-int-center}. This theorem will be later
+generalized to any point of the disk, but I will use this case to
+prove the general version.
 
 \begin{lstlisting}[caption=Cauchy integral formula for the center of a disk,label=lst:cauchy-int-center]
 lemma cauchy_integral_disk_center {R : ℝ} (h0 : 0 < R)
@@ -1167,7 +1191,7 @@ lemma cauchy_integral_disk_center {R : ℝ} (h0 : 0 < R)
 \end{lstlisting}
 
 Applying this lemma to the function \((z-c)\cdot f(z)\), we prove the
-Cauchy-Goursat theorem for a disk.
+Cauchy-Goursat theorem for a disk, see \autoref{lst:cauchy-circle}.
 
 \begin{lstlisting}[caption=The Cauchy-Goursat theorem for a disk,label=lst:cauchy-circle]
 lemma cauchy_thm_disk {R : ℝ} (h0 : 0 ≤ R) {f : ℂ → E}
@@ -1181,8 +1205,9 @@ Next, I show the Cauchy integral formula
 \[
   f(w)=\frac{1}{2\pi i}\oint_{|z-c|=R}\frac{f(z)}{z-w}\,dz
 \]
-for any point of the open disc, \(|w-c|<R\). To obtain this result, I
-apply the Cauchy-Goursat theorem to the function
+for any point of the open disc, \(|w-c|<R\), see
+\autoref{lst:cauchy-int}. To obtain this result, I apply the
+Cauchy-Goursat theorem to the function
 \[
   g(z)=
   \begin{cases}
@@ -1212,7 +1237,7 @@ The Cauchy integral formula immediately implies that a function
 \(f\colon\bbC\to E\) that is complex differentiable on an open disk
 and is continuous on the corresponding closed disk must be analytic on
 the interior of this disk. The coefficients of the Taylor series are
-given by Cauchy integrals.
+given by Cauchy integrals, see \cref{lst:cauchy-series,lst:diff-analytic}.
 
 \begin{lstlisting}[caption=Power series for a function differentiable on a disk,label=lst:cauchy-series]
 def cauchy_power_series (f : ℂ → E) (c : ℂ) (R : ℝ) :
@@ -1229,9 +1254,10 @@ lemma analytic_of_differentiable {R : ℝ≥0} {c : ℂ} {f : ℂ → E}
 \end{lstlisting}
 
 I started to use these theorems to build a complex analysis library in
-Lean. For example, I proved the Riemann removable singularity theorem.
+Lean. For example, I proved the Riemann removable singularity theorem,
+see \autoref{lst:removable-singularity}.
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Riemann removable singularity theorem},label=lst:removable-singularity]
 lemma removable_singularity
   (hd : ∀ᶠ z in 𝓝[≠] c, differentiable_at ℂ f z)
   (ho : is_o (λ z, f z - f c) (λ z, (z - c)⁻¹) (𝓝[≠] c)) :
