@@ -37,7 +37,6 @@
 % \nolinenumbers %uncomment to disable line numbering
 
 \usepackage{csquotes,braket,upgreek,MnSymbol}
-\usepackage{todonotes}
 
 \definecolor{keywordcolor}{rgb}{0.7, 0.1, 0.1}   % red
 \definecolor{commentcolor}{rgb}{0.4, 0.4, 0.4}   % grey
@@ -83,6 +82,7 @@
 
 \begin{document}
 \maketitle
+\sloppy
 
 \begin{abstract}
   I formalize a version of the divergence theorem for a function on a
@@ -1080,57 +1080,12 @@ modifications required to generalize it from a function
 
 First, I prove that the indicator function of a measurable set~\(s\)
 is McShane integrable with respect to the volume defined by a locally
-finite measure~\(\mu\), see \autoref{lst:McShane-indicator}, with the
-integral equal to the measure of this set. To prove this, I choose a
-closed subset~\(F\subset s\) and an open superset \(U\supset s\) such
-that \(\mu(U\setminus F)\) is small, then choose a gauge function
-\(\delta(x)\) so that the closed ball with center \(x\) and radius
-\(\delta(x)\) is included in \(U\) whenever \(x\in s\) and is disjoint
-with \(F\) otherwise.
-
-\begin{lstlisting}[caption=Integral of the indicator function of a measurable set,label=lst:McShane-indicator]
-lemma has_integral_indicator_const (l : integration_params) (hl : l.bRiemann = ff)
-  {s : set ℝⁿ} (hs : measurable_set s) (I : box n) (y : E)
-  (μ : measure ℝⁿ) [is_locally_finite_measure μ] :
-  has_integral I l (s.indicator (λ _, y)) μ.to_box_additive.to_smul
-    ((μ (s ∩ I)).to_real • y) :=
-\end{lstlisting}
-
-Then I show that a function \(f\colon\bbR^{n}\to E\) that is
-a.e.~equal to zero is McShane integrable with integral zero, see
-\autoref{lst:McShane-ae-zero}. To prove this lemma, I cover each set
-\(\set{x|n<\|f(x)\|\le n+1}\) by an open set \(U_{n}\) of measure less
-than \(\frac{\eps}{2^{n+1}(n+1)}\). Then I choose a gauge
-function~\(\delta\) so that each closed ball with center \(x\) and
-radius \(\delta(x)\) is included in \(U_{\lceil\|f(x)\|\rceil}\). Then
-the Riemann integral sum is at most \(\eps\), which completes the
-proof.
-
-\begin{lstlisting}[caption=An a.e.-null function has integral zero,label=lst:McShane-ae-zero]
-lemma has_integral_zero_of_ae_eq_zero {l : integration_params} {I : box n} {f : ℝⁿ → E}
-  {μ : measure ℝⁿ} [is_locally_finite_measure μ] (hf : f =ᵐ[μ.restrict I] 0)
-  (hl : l.bRiemann = ff) :
-  has_integral I l f μ.to_box_additive.to_smul 0 :=
-\end{lstlisting}
-
-Integrability of the indicator function of a measurable set
-immediately implies integrability of a simple function. In order to
-prove integrability of any Bochner integrable function, we need to
-consider a.e.-limits of simple functions too. First, I replace the
-function by a measurable function by changing its values on a set of
-measure zero. Next, I choose a sequence of simple functions~\(f_{n}\)
-that approximate our function~\(g\) and has some nice properties
-(e.g., \(\|f_{n}(x)-g(x)\|\) is decreasing and tends to zero for any
-\(x\)). Then I take \(\eps>0\), choose \(N\) such that
-\(\int_{I}\|f_{N}(x)-g(x)\|\,\partial\mu<\eps\), and for each \(x\) I
-choose \(N_{x}\ge N\) such that \(\|f_{N_{x}}(x)-g(x)\|<\eps\). Let
-\(\delta_{n}\) be a gauge function such that the integral sum for
-\(f_{n}\) over a tagged partition subordinate to \(\delta_{n}\) is
-\(\frac{\eps}{2^{n+1}}\)-close to the integral of \(f_{n}\). I show
-that for the gauge function \(\delta(x)=\delta_{N_{x}}(x)\), the
-integral sum for \(g\) over a tagged partition subordinate to
-\(\delta\) is \(\eps(\mu(I)+2)\)-close to the Bochner integral
-of~\(g\).
+finite measure~\(\mu\). This immediately implies integrability of
+simple functions. Then I show that changing the values of a function
+on a set of measure zero does not affect its integral. Finally, I use
+approximations of integrable functions by a sequence of simple
+functions to prove McShane integrability of a Bochner integrable
+function.
 
 \subsection{Divergence theorem for the Bochner integral}%
 \label{sec:diverg-theor-bochn}
@@ -1375,11 +1330,6 @@ proof of the fact that a polynomial vector field on \(\bbR^{2}\) has
 only finitely many limit cycles (i.e., isolated periodic solutions),
 at least in the case of hyperbolic singular points. The proof of this
 theorem heavily relies on the complex analysis.
-
-\subsection{Spectrum}%
-\label{sec:spectrum}
-
-TODO
 
 \bibliography{divthm}
 \end{document}
